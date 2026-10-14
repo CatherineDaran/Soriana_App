@@ -43,10 +43,15 @@ pdfmetrics.registerFontFamily("DejaVu", normal="DejaVu", bold="DejaVu-Bold", ita
                               boldItalic="DejaVu-Bold")
 FUENTE, FUENTE_B = "DejaVu", "DejaVu-Bold"
 
-AZUL = "#1F3864"
-GRIS = "#D9D9D9"
-VERDE = "#2E7D32"
-ROJO = "#C62828"
+# Paleta de Soriana, suavizada
+AZUL = "#B23A33"      # color principal (rojo Soriana); se conserva el nombre por compatibilidad
+CARBON = "#43464F"
+GRIS = "#EFECEA"
+VERDE = "#3E8A3A"
+ROJO = "#B23A33"
+VERDE_M = "#6AAE5A"
+SEC_CL = "#9CC8DA"
+PRIM_CL = "#E6B5AF"
 
 
 # ---------------------------------------------------------------------------
@@ -90,7 +95,7 @@ def grafica_inflacion(infl: dict) -> io.BytesIO:
     ax.plot(s.index, s["soriana"], color=AZUL, lw=1.5, label="Precio SORIANA B ($)")
     ax.set_ylabel("Precio ($)", fontsize=8)
     ax2 = ax.twinx()
-    ax2.plot(s.index, s["inflacion_anual"] * 100, color="#8C8C8C", lw=1.2, ls="--",
+    ax2.plot(s.index, s["inflacion_anual"] * 100, color="#A9A3A0", lw=1.2, ls="--",
              label="Inflación anual (%)")
     ax2.set_ylabel("Inflación anual (%)", fontsize=8)
     ax2.tick_params(labelsize=7)
@@ -107,7 +112,7 @@ def grafica_ipc(ipc: dict) -> io.BytesIO:
     s = ipc["serie"]
     fig, ax = plt.subplots(figsize=(7, 2.6))
     ax.plot(s.index, s["base100_soriana"], color=AZUL, lw=1.5, label="SORIANA B")
-    ax.plot(s.index, s["base100_ipc"], color="#8C8C8C", lw=1.2, label="S&P/BMV IPC")
+    ax.plot(s.index, s["base100_ipc"], color="#A9A3A0", lw=1.2, label="S&P/BMV IPC")
     _estilo(ax)
     ax.legend(fontsize=7, frameon=False)
     ax.set_title("Desempeño base 100 (nov-2021 = 100)", fontsize=9, color=AZUL)
@@ -118,8 +123,8 @@ def grafica_escenarios(esc: dict, precio: float) -> io.BytesIO:
     nombres = m.ESCENARIOS
     vals = [esc["resultados"][e]["valuacion"]["valor_por_accion"] or 0 for e in nombres]
     fig, ax = plt.subplots(figsize=(6, 2.6))
-    barras = ax.bar(nombres, vals, color=["#8EA3C8", AZUL, "#4A6699"], width=0.55)
-    ax.axhline(precio, color=ROJO, lw=1, ls="--", label=f"Precio de mercado ${precio:,.2f}")
+    barras = ax.bar(nombres, vals, color=[SEC_CL, AZUL, VERDE_M], width=0.55)
+    ax.axhline(precio, color=CARBON, lw=1, ls="--", label=f"Precio de mercado ${precio:,.2f}")
     for b, v in zip(barras, vals):
         ax.text(b.get_x() + b.get_width() / 2, v, f"${v:,.2f}", ha="center", va="bottom", fontsize=7)
     _estilo(ax)
@@ -159,7 +164,7 @@ def grafica_sensibilidad(mat, wacc_base: float, g_base: float) -> io.BytesIO:
     for i, w in enumerate(mat.index):
         for j, g in enumerate(mat.columns):
             if abs(w - wacc_base) < 1e-9 and abs(g - g_base) < 1e-9:
-                ax.add_patch(plt.Rectangle((j - 0.5, i - 0.5), 1, 1, fill=False, ec=ROJO, lw=2))
+                ax.add_patch(plt.Rectangle((j - 0.5, i - 0.5), 1, 1, fill=False, ec=CARBON, lw=2))
     fig.colorbar(im, ax=ax, shrink=0.8).ax.tick_params(labelsize=7)
     ax.set_title("Sensibilidad del valor por acción: WACC vs g", fontsize=9, color=AZUL)
     return _png(fig)
@@ -171,7 +176,7 @@ def grafica_tornado(tor) -> io.BytesIO:
     y = np.arange(len(tor))
     bajo = tor["-10%"].astype(float).values - base
     alto = tor["+10%"].astype(float).values - base
-    ax.barh(y, bajo, left=base, color="#8EA3C8", label="Variable −10%")
+    ax.barh(y, bajo, left=base, color=PRIM_CL, label="Variable −10%")
     ax.barh(y, alto, left=base, color=AZUL, label="Variable +10%")
     ax.axvline(base, color="black", lw=0.8)
     ax.set_yticks(y, tor["Variable"])

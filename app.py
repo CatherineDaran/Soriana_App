@@ -17,13 +17,20 @@ from plotly.subplots import make_subplots
 import modelo as m
 import reporte_pdf
 
-AZUL = "#1F3864"
-AZUL_CLARO = "#9DB0D3"
-AZUL_MEDIO = "#4A6699"
-GRIS = "#8C95A6"
-GRIS_TEXTO = "#5B6475"
-VERDE = "#2E7D32"
-ROJO = "#C62828"
+# Paleta de Soriana, suavizada para lectura cómoda
+PRIM = "#B23A33"       # rojo Soriana
+PRIM_CL = "#E6B5AF"    # rojo claro
+PRIM_FONDO = "#FBF3F2"
+VERDE_M = "#6AAE5A"    # verde Soriana
+LIMA = "#A8BF3F"       # verde lima del logotipo
+SEC = "#4A90BE"        # azul (Pantone 3005, suavizado)
+SEC_CL = "#9CC8DA"     # azul claro (Pantone 311)
+CARBON = "#43464F"     # gris carbón de la marca
+GRIS = "#A9A3A0"       # gris cálido (Pantone 407)
+GRIS_C = "#D9D5D2"
+GRIS_TEXTO = "#62646B"
+VERDE = "#3E8A3A"      # diferencias positivas
+ROJO = "#B23A33"       # diferencias negativas
 FUENTE = "Inter, 'Helvetica Neue', Arial, sans-serif"
 
 st.set_page_config(page_title="Valuación SORIANA B", layout="wide", initial_sidebar_state="expanded")
@@ -35,80 +42,98 @@ st.markdown(
     html, body, .stApp, [data-testid="stSidebar"], button, input, textarea, select,
     [data-testid="stMarkdownContainer"] {{ font-family: {FUENTE}; }}
     .block-container {{ padding-top: 1.6rem; padding-bottom: 3rem; max-width: 1380px; }}
-    h1, h2, h3, h4 {{ color: {AZUL}; font-family: {FUENTE}; letter-spacing: -0.01em; }}
+    h1, h2, h3, h4 {{ color: {CARBON}; font-family: {FUENTE}; letter-spacing: -0.01em; }}
 
     /* Encabezado */
-    .hero {{ background: linear-gradient(120deg, {AZUL} 0%, #2C4A7C 100%); color: #FFFFFF;
-             border-radius: 12px; padding: 22px 28px; margin-bottom: 18px;
-             display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; }}
-    .hero h1 {{ color: #FFFFFF; font-size: 1.65rem; font-weight: 700; margin: 0; padding: 0; }}
-    .hero .sub {{ color: #C9D3E6; font-size: .9rem; margin-top: 4px; }}
+    .hero {{ background: #FFFFFF; border: 1px solid #ECE8E6; border-radius: 14px; overflow: hidden;
+             margin-bottom: 18px; box-shadow: 0 1px 3px rgba(67,70,79,.06); }}
+    .hero .franja {{ height: 6px; background: linear-gradient(90deg, {PRIM} 0 50%, {VERDE_M} 50% 75%, {LIMA} 75% 100%); }}
+    .hero .cuerpo {{ display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: center;
+                     padding: 20px 26px; }}
+    .hero .titulo {{ color: {CARBON}; font-size: 1.6rem; font-weight: 700; line-height: 1.25; }}
+    .hero .titulo span {{ color: {PRIM}; }}
+    .hero .sub {{ color: {GRIS_TEXTO}; font-size: .9rem; margin-top: 4px; }}
     .hero .chips {{ display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }}
-    .hero .chip {{ background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.22);
-                   border-radius: 999px; padding: 3px 11px; font-size: .78rem; color: #FFFFFF; }}
-    .hero .precio {{ text-align: right; }}
-    .hero .precio .etq {{ color: #C9D3E6; font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; }}
-    .hero .precio .val {{ font-size: 2.1rem; font-weight: 700; line-height: 1.1; }}
+    .hero .chip {{ background: #F6F4F3; border: 1px solid #E7E2DF; border-radius: 999px; padding: 3px 11px;
+                   font-size: .78rem; color: {CARBON}; }}
+    .hero .chip.esc {{ background: {PRIM_FONDO}; border-color: {PRIM_CL}; color: {PRIM}; font-weight: 600; }}
+    .hero .precio {{ text-align: right; background: #F8F7F6; border-radius: 12px; padding: 14px 20px; min-width: 250px; }}
+    .hero .precio .etq {{ color: {GRIS_TEXTO}; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em;
+                          font-weight: 600; }}
+    .hero .precio .val {{ font-size: 2.1rem; font-weight: 700; line-height: 1.15; color: {PRIM}; }}
     .hero .precio .dif {{ display: inline-block; margin-top: 4px; padding: 2px 10px; border-radius: 999px;
-                          font-size: .85rem; font-weight: 600; background: #FFFFFF; }}
+                          font-size: .82rem; font-weight: 600; }}
+    .hero .precio .dif.pos {{ background: #EAF4E8; }}
+    .hero .precio .dif.neg {{ background: #F9E9E7; }}
+    .hero .precio .sub {{ font-size: .8rem; margin-top: 6px; }}
+    @media (max-width: 900px) {{
+      .hero .cuerpo {{ grid-template-columns: 1fr; }}
+      .hero .precio {{ text-align: left; }}
+    }}
 
     /* Pestañas */
-    [data-baseweb="tab-list"] {{ gap: 2px; border-bottom: 1px solid #E3E7EE; }}
+    [data-baseweb="tab-list"] {{ gap: 2px; border-bottom: 1px solid #ECE8E6; }}
     [data-baseweb="tab"] {{ padding: 10px 14px !important; }}
     [data-baseweb="tab"] p {{ font-size: .92rem; font-weight: 500; color: {GRIS_TEXTO}; }}
-    [data-baseweb="tab"][aria-selected="true"] p {{ color: {AZUL}; font-weight: 600; }}
-    [data-baseweb="tab-highlight"] {{ background-color: {AZUL} !important; height: 3px !important; }}
+    [data-baseweb="tab"][aria-selected="true"] p {{ color: {PRIM}; font-weight: 600; }}
+    [data-baseweb="tab-highlight"] {{ background-color: {PRIM} !important; height: 3px !important; }}
 
     /* Secciones */
-    .seccion {{ margin: 26px 0 10px 0; padding-bottom: 6px; border-bottom: 1px solid #E3E7EE; }}
-    .seccion h3 {{ font-size: 1.12rem; font-weight: 650; margin: 0; padding: 0; }}
-    .seccion p {{ color: {GRIS_TEXTO}; font-size: .86rem; margin: 3px 0 0 0; }}
+    .seccion {{ margin: 26px 0 10px 0; padding-bottom: 6px; border-bottom: 1px solid #ECE8E6; }}
+    .seccion h3 {{ font-size: 1.12rem; font-weight: 650; margin: 0; padding: 0; border-left: 4px solid {PRIM};
+                   padding-left: 10px; }}
+    .seccion p {{ color: {GRIS_TEXTO}; font-size: .86rem; margin: 4px 0 0 14px; }}
 
     /* Tarjetas */
-    .tarjeta {{ border: 1px solid #E3E7EE; border-radius: 10px; padding: 13px 16px; background: #FFFFFF;
-               margin-bottom: 12px; min-height: 100px; box-shadow: 0 1px 2px rgba(16,24,40,.04); }}
-    .tarjeta .etq {{ font-size: .72rem; color: {GRIS_TEXTO}; text-transform: uppercase; letter-spacing: .06em;
-                     font-weight: 600; }}
-    .tarjeta .val {{ font-size: 1.5rem; font-weight: 700; color: {AZUL}; margin-top: 4px;
-                     font-variant-numeric: tabular-nums; }}
-    .tarjeta .sub {{ font-size: .78rem; color: #7B8494; margin-top: 2px; }}
-    .tarjeta.destacada {{ background: {AZUL}; border-color: {AZUL}; }}
-    .tarjeta.destacada .etq, .tarjeta.destacada .sub {{ color: #C9D3E6; }}
-    .tarjeta.destacada .val {{ color: #FFFFFF; }}
+    .tarjeta {{ border: 1px solid #ECE8E6; border-radius: 12px; padding: 13px 16px; background: #FFFFFF;
+               margin-bottom: 12px; min-height: 100px; box-shadow: 0 1px 2px rgba(67,70,79,.05); }}
+    .tarjeta {{ overflow: hidden; }}
+    .tarjeta .etq {{ font-size: .7rem; color: {GRIS_TEXTO}; text-transform: uppercase; letter-spacing: .05em;
+                     font-weight: 600; word-break: normal; overflow-wrap: normal; hyphens: none; }}
+    .tarjeta .val {{ font-size: clamp(1.05rem, 1.55vw, 1.5rem); font-weight: 700; color: {CARBON}; margin-top: 4px;
+                     font-variant-numeric: tabular-nums; white-space: nowrap; }}
+    .tarjeta .sub {{ font-size: .78rem; color: #85878D; margin-top: 2px; }}
+    .tarjeta.destacada {{ background: {PRIM_FONDO}; border-color: {PRIM_CL}; }}
+    .tarjeta.destacada .val {{ color: {PRIM}; }}
     .pos {{ color: {VERDE} !important; }}
     .neg {{ color: {ROJO} !important; }}
 
     /* Tablas financieras */
-    .tabla-wrap {{ border: 1px solid #E3E7EE; border-radius: 10px; overflow-x: auto; margin: 6px 0 14px 0;
+    .tabla-wrap {{ border: 1px solid #ECE8E6; border-radius: 12px; overflow-x: auto; margin: 6px 0 14px 0;
                    background: #FFFFFF; }}
     table.tf {{ width: 100%; border-collapse: collapse; font-size: .86rem; font-variant-numeric: tabular-nums; }}
-    table.tf th {{ background: #F2F4F7; color: #344054; font-weight: 600; text-align: right; padding: 9px 14px;
-                   border-bottom: 1px solid #D0D5DD; white-space: nowrap; }}
-    table.tf td {{ padding: 7px 14px; border-bottom: 1px solid #EEF0F3; text-align: right; color: #1D2939;
+    table.tf th {{ background: #F6F4F3; color: {CARBON}; font-weight: 600; text-align: right; padding: 9px 14px;
+                   border-bottom: 1px solid #E2DDDA; white-space: nowrap; }}
+    table.tf td {{ padding: 7px 14px; border-bottom: 1px solid #F1EEEC; text-align: right; color: #2E3036;
                    white-space: nowrap; }}
     table.tf th.izq, table.tf td.izq {{ text-align: left; white-space: normal; }}
     table.tf tr:last-child td {{ border-bottom: none; }}
-    table.tf tr:hover td {{ background: #F8FAFC; }}
-    table.tf tr.total td {{ font-weight: 700; color: {AZUL}; border-top: 1.5px solid {AZUL}; background: #F5F7FB; }}
+    table.tf tr:hover td {{ background: #FAF9F8; }}
+    table.tf tr.total td {{ font-weight: 700; color: {PRIM}; border-top: 1.5px solid {PRIM_CL}; background: {PRIM_FONDO}; }}
     table.tf tr.sutil td {{ color: {GRIS_TEXTO}; font-size: .82rem; }}
     .badge {{ display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .75rem; font-weight: 700; }}
-    .badge.ok {{ background: #E7F4EA; color: {VERDE}; }}
-    .badge.mal {{ background: #FBE9E9; color: {ROJO}; }}
+    .badge.ok {{ background: #EAF4E8; color: {VERDE}; }}
+    .badge.mal {{ background: #F9E9E7; color: {ROJO}; }}
 
     /* Nota */
-    .nota {{ background: #F5F7FB; border-left: 3px solid {AZUL}; border-radius: 6px; padding: 12px 16px;
-             color: #344054; font-size: .9rem; line-height: 1.55; margin: 8px 0 14px 0; }}
+    .nota {{ background: #F8F7F6; border-left: 3px solid {VERDE_M}; border-radius: 8px; padding: 12px 16px;
+             color: {CARBON}; font-size: .9rem; line-height: 1.55; margin: 8px 0 14px 0; }}
 
     /* Barra lateral */
-    [data-testid="stSidebar"] {{ background: #F5F7FA; border-right: 1px solid #E3E7EE; }}
-    [data-testid="stSidebar"] [data-testid="stExpander"] details {{ background: #FFFFFF; border-color: #E3E7EE;
-                                                                    border-radius: 8px; }}
-    [data-testid="stSidebar"] [data-testid="stExpander"] summary p {{ font-weight: 600; color: {AZUL}; }}
-    .lateral-titulo {{ background: {AZUL}; color: #FFFFFF; border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; }}
-    .lateral-titulo .t {{ font-size: 1.1rem; font-weight: 700; }}
-    .lateral-titulo .s {{ font-size: .78rem; color: #C9D3E6; margin-top: 2px; }}
-    .manual-etq {{ font-size: .86rem; font-weight: 600; color: #344054; margin-top: 6px; }}
-    .manual-etq code {{ font-size: .78rem; color: {AZUL}; background: #EEF2F8; }}
+    [data-testid="stSidebar"] {{ background: #F8F7F6; border-right: 1px solid #ECE8E6; }}
+    [data-testid="stSidebar"] [data-testid="stExpander"] details {{ background: #FFFFFF; border-color: #ECE8E6;
+                                                                    border-radius: 10px; }}
+    [data-testid="stSidebar"] [data-testid="stExpander"] summary p {{ font-weight: 600; color: {CARBON}; }}
+    .lateral-titulo {{ background: #FFFFFF; border: 1px solid #ECE8E6; border-top: 4px solid {PRIM};
+                       border-radius: 10px; padding: 12px 16px; margin-bottom: 12px; }}
+    .lateral-titulo .t {{ font-size: 1.05rem; font-weight: 700; color: {CARBON}; }}
+    .lateral-titulo .s {{ font-size: .78rem; color: {GRIS_TEXTO}; margin-top: 2px; }}
+    .manual-etq {{ font-size: .86rem; font-weight: 600; color: {CARBON}; margin-top: 6px; }}
+    .manual-etq code {{ font-size: .78rem; color: {PRIM}; background: {PRIM_FONDO}; }}
+    [data-testid="stSidebar"] [role="radiogroup"] label {{ background: #FFFFFF; border: 1px solid #ECE8E6;
+                                                            border-radius: 8px; padding: 6px 10px; margin-bottom: 4px; width: 100%; }}
+    [data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) {{ background: {PRIM_FONDO};
+                                                                              border-color: {PRIM_CL}; }}
     </style>
     """,
     unsafe_allow_html=True,
@@ -204,7 +229,7 @@ def esc_md(texto: str) -> str:
 def layout(fig, titulo=None, alto=360):
     fig.update_layout(
         template="plotly_white",
-        title=dict(text=titulo, font=dict(color=AZUL, size=14, family=FUENTE), x=0, xanchor="left")
+        title=dict(text=titulo, font=dict(color=CARBON, size=14, family=FUENTE), x=0, xanchor="left")
         if titulo else None,
         height=alto,
         margin=dict(l=8, r=8, t=44 if titulo else 12, b=8),
@@ -276,7 +301,7 @@ def color_calor(v, vmin, vmax):
     if _nd(v) or vmax == vmin:
         return "", "#1D2939"
     t = (v - vmin) / (vmax - vmin)
-    a, b = np.array([0xF2, 0xF5, 0xFA]), np.array([0x1F, 0x38, 0x64])
+    a, b = np.array([0xF3, 0xF8, 0xFB]), np.array([0x2F, 0x78, 0xA8])
     r, g, bl = (a + (b - a) * t).astype(int)
     return f"#{r:02X}{g:02X}{bl:02X}", ("#FFFFFF" if t > 0.55 else "#1D2939")
 
@@ -324,7 +349,7 @@ with st.sidebar:
                 f"<div class='s'>{h(EMP['emisora'])} · valuación por FCFF</div></div>", unsafe_allow_html=True)
 
     st.session_state.setdefault(PREFIJO + "escenario", "Base")
-    escenario = st.selectbox("Escenario", m.ESCENARIOS, key=PREFIJO + "escenario")
+    escenario = st.radio("Escenario", m.ESCENARIOS, key=PREFIJO + "escenario")
 
     p = copy.deepcopy(DEF)
     ajuste = m.ajuste_antad(DATA)
@@ -440,35 +465,32 @@ NOMBRE_PDF = f"Valuacion_Soriana_{escenario}.pdf"
 # Encabezado
 dif = V["diferencia_precio"]
 if dif is None:
-    chip_dif = "<span class='dif' style='color:#5B6475'>Valor no disponible</span>"
+    chip_dif = "<span class='dif'>Valor no disponible</span>"
 else:
-    chip_dif = (f"<span class='dif' style='color:{VERDE if dif >= 0 else ROJO}'>"
+    chip_dif = (f"<span class='dif {'pos' if dif >= 0 else 'neg'}'>"
                 f"{'+' if dif >= 0 else ''}{fp(dif, 1)} vs precio</span>")
-st.markdown(
-    f"""
-    <div class='hero'>
-      <div>
-        <h1>Valuación de {h(EMP['nombre'])}</h1>
-        <div class='sub'>{h(EMP['curso'])} · Tecnológico de Monterrey · {h(EMP['estudiante'])}
-          ({h(EMP['matricula'])})</div>
-        <div class='chips'>
-          <span class='chip'>{h(EMP['emisora'])} · BMV</span>
-          <span class='chip'>Escenario {h(escenario)}</span>
-          <span class='chip'>WACC {fp(V['wacc'])}</span>
-          <span class='chip'>g {fp(V['g'])}</span>
-          <span class='chip'>Cifras en millones de pesos</span>
-        </div>
-      </div>
-      <div class='precio'>
-        <div class='etq'>Valor estimado por acción</div>
-        <div class='val'>{h(fd(V['valor_por_accion']))}</div>
-        {chip_dif}
-        <div class='sub'>Precio de mercado {h(fd(p['precio_mercado']))} · {h(EMP['fecha_precio'])}</div>
-      </div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+# El HTML va en una sola línea para que Markdown no lo interprete como bloque de código.
+hero = "".join([
+    "<div class='hero'><div class='franja'></div><div class='cuerpo'>",
+    "<div>",
+    f"<div class='titulo'>Valuación de <span>{h(EMP['nombre'])}</span></div>",
+    f"<div class='sub'>{h(EMP['curso'])} · Tecnológico de Monterrey · {h(EMP['estudiante'])} "
+    f"({h(EMP['matricula'])})</div>",
+    "<div class='chips'>",
+    f"<span class='chip'>{h(EMP['emisora'])} · BMV</span>",
+    f"<span class='chip esc'>Escenario {h(escenario)}</span>",
+    f"<span class='chip'>WACC {fp(V['wacc'])}</span>",
+    f"<span class='chip'>g {fp(V['g'])}</span>",
+    "<span class='chip'>Cifras en millones de pesos</span>",
+    "</div></div>",
+    "<div class='precio'>",
+    "<div class='etq'>Valor estimado por acción</div>",
+    f"<div class='val'>{h(fd(V['valor_por_accion']))}</div>",
+    chip_dif,
+    f"<div class='sub'>Precio de mercado {h(fd(p['precio_mercado']))} · {h(EMP['fecha_precio'])}</div>",
+    "</div></div></div>",
+])
+st.markdown(hero, unsafe_allow_html=True)
 
 if not V["valido"]:
     st.warning(f"El WACC ({fp(V['wacc'])}) no es mayor que el crecimiento perpetuo g ({fp(V['g'])}). "
@@ -488,7 +510,7 @@ def fig_inflacion_activo():
     s = INF["serie"]
     fig = make_subplots(specs=[[{"secondary_y": True}]])
     fig.add_trace(go.Scatter(x=s.index, y=s["soriana"], name="Precio SORIANA B ($)",
-                             line=dict(color=AZUL, width=2.2)), secondary_y=False)
+                             line=dict(color=PRIM, width=2.2)), secondary_y=False)
     fig.add_trace(go.Scatter(x=s.index, y=s["inflacion_anual"] * 100, name="Inflación anual (%)",
                              line=dict(color=GRIS, width=1.6, dash="dash")), secondary_y=True)
     fig.update_yaxes(title_text="Precio ($)", secondary_y=False)
@@ -500,7 +522,7 @@ def fig_ipc_activo():
     s = IPC["serie"]
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=s.index, y=s["base100_soriana"], name="SORIANA B",
-                             line=dict(color=AZUL, width=2.2)))
+                             line=dict(color=PRIM, width=2.2)))
     fig.add_trace(go.Scatter(x=s.index, y=s["base100_ipc"], name="S&P/BMV IPC", line=dict(color=GRIS, width=1.6)))
     fig.update_yaxes(title_text="Base 100 (nov-2021)")
     return layout(fig, "IPC vs activo (base 100)")
@@ -508,12 +530,12 @@ def fig_ipc_activo():
 
 def fig_escenarios():
     vals = [ESC["resultados"][e]["valuacion"]["valor_por_accion"] for e in m.ESCENARIOS]
-    fig = go.Figure(go.Bar(x=m.ESCENARIOS, y=[v or 0 for v in vals], marker_color=[AZUL_CLARO, AZUL, AZUL_MEDIO],
+    fig = go.Figure(go.Bar(x=m.ESCENARIOS, y=[v or 0 for v in vals], marker_color=[SEC_CL, PRIM, VERDE_M],
                            text=[fd(v) for v in vals], textposition="outside", name="Valor por acción",
                            showlegend=False, width=0.55))
     fig.add_trace(go.Scatter(x=m.ESCENARIOS, y=[p["precio_mercado"]] * 3, mode="lines",
                              name=f"Precio de mercado {fd(p['precio_mercado'])}",
-                             line=dict(color=ROJO, dash="dash", width=1.6)))
+                             line=dict(color=CARBON, dash="dash", width=1.6)))
     if ESC["ponderado"] is not None:
         fig.add_trace(go.Scatter(x=m.ESCENARIOS, y=[ESC["ponderado"]] * 3, mode="lines",
                                  name=f"Valor ponderado {fd(ESC['ponderado'])}",
@@ -525,7 +547,7 @@ def fig_escenarios():
 def fig_valor_accion():
     cats = ["Precio de mercado", f"Valor estimado ({escenario})", "Valor ponderado"]
     vals = [p["precio_mercado"], V["valor_por_accion"], ESC["ponderado"]]
-    fig = go.Figure(go.Bar(x=cats, y=[v or 0 for v in vals], marker_color=["#C5CBD6", AZUL, AZUL_MEDIO],
+    fig = go.Figure(go.Bar(x=cats, y=[v or 0 for v in vals], marker_color=[GRIS_C, PRIM, VERDE_M],
                            text=[fd(v) for v in vals], textposition="outside", width=0.55))
     fig.update_yaxes(title_text="$ por acción")
     return layout(fig, "Valor por acción")
@@ -547,12 +569,12 @@ def fig_heatmap(mat):
     texto = [[fd(v) if not np.isnan(v) else "n.d." for v in fila] for fila in z]
     fig = go.Figure(go.Heatmap(
         z=z, x=[f"{g * 100:.1f}%" for g in mat.columns], y=[f"{w * 100:.2f}%" for w in mat.index],
-        text=texto, texttemplate="%{text}", colorscale=[[0, "#F2F5FA"], [1, AZUL]], showscale=False,
+        text=texto, texttemplate="%{text}", colorscale=[[0, "#F3F8FB"], [1, "#2F78A8"]], showscale=False,
         xgap=2, ygap=2, hovertemplate="WACC %{y}<br>g %{x}<br>%{text}<extra></extra>"))
     i, j = celda_base(mat)
     if j is not None:
         fig.add_shape(type="rect", x0=j - 0.5, x1=j + 0.5, y0=i - 0.5, y1=i + 0.5,
-                      line=dict(color=ROJO, width=3))
+                      line=dict(color=CARBON, width=3))
     fig.update_xaxes(title_text="Crecimiento perpetuo (g)", side="bottom", showgrid=False)
     fig.update_yaxes(title_text="WACC", autorange="reversed", showgrid=False)
     return layout(fig, "Sensibilidad WACC – g (valor por acción)", 380)
@@ -586,7 +608,7 @@ with tabs[0]:
     tarjeta(c[1], "Valor terminal", fm(V["valor_terminal"]), f"Peso en EV: {fp(V['peso_vt'], 1)}")
     tarjeta(c[2], "Enterprise Value", fm(V["enterprise_value"]), "mdp")
     tarjeta(c[3], "Equity Value", fm(V["equity_value"]), "mdp")
-    tarjeta(c[4], "Escenario", escenario, f"Valor ponderado: {fd(ESC['ponderado'])}")
+    tarjeta(c[4], "Valor ponderado", fd(ESC["ponderado"]), f"Escenario seleccionado: {escenario}")
 
     c1, c2 = st.columns(2)
     grafica(fig_inflacion_activo(), c1)
@@ -606,9 +628,9 @@ with tabs[1]:
     inf_c = INF["inflacion_completa"].dropna(subset=["inflacion_mensual"])
     fig = make_subplots(specs=[[{"secondary_y": True}]])
     fig.add_trace(go.Bar(x=inf_c.index, y=inf_c["inflacion_mensual"] * 100, name="Inflación mensual (%)",
-                         marker_color=AZUL_CLARO, opacity=0.8), secondary_y=True)
+                         marker_color=SEC_CL, opacity=0.8), secondary_y=True)
     fig.add_trace(go.Scatter(x=inf_c.index, y=inf_c["inflacion_anual"] * 100, name="Inflación anual (%)",
-                             line=dict(color=AZUL, width=2.2)), secondary_y=False)
+                             line=dict(color=PRIM, width=2.2)), secondary_y=False)
     fig.update_yaxes(title_text="Anual (%)", secondary_y=False)
     fig.update_yaxes(title_text="Mensual (%)", secondary_y=True, showgrid=False)
     grafica(layout(fig, "Inflación anual y mensual"))
@@ -626,9 +648,9 @@ with tabs[1]:
     xs = np.linspace(s["inflacion_anual"].min(), s["inflacion_anual"].max(), 50)
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=s["inflacion_anual"] * 100, y=s["soriana"], mode="markers", name="Observado",
-                             marker=dict(color=AZUL, size=7, opacity=0.8)))
+                             marker=dict(color=PRIM, size=7, opacity=0.8)))
     fig.add_trace(go.Scatter(x=xs * 100, y=reg["intercepto"] + reg["pendiente"] * xs, name="Regresión",
-                             line=dict(color=ROJO, dash="dash", width=1.8)))
+                             line=dict(color=CARBON, dash="dash", width=1.6)))
     fig.update_xaxes(title_text="Inflación anual (%)")
     fig.update_yaxes(title_text="Precio ($)")
     grafica(layout(fig, f"Precio = {reg['intercepto']:.2f} {reg['pendiente_por_pp']:+.3f} × inflación (pp)"), c2)
@@ -640,20 +662,20 @@ with tabs[1]:
     c1, c2 = st.columns(2)
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=x, y=s["soriana"], mode="markers", name="Precio",
-                             marker=dict(color=AZUL, size=6, opacity=0.8)))
+                             marker=dict(color=PRIM, size=6, opacity=0.8)))
     fig.add_trace(go.Scatter(x=x, y=tl["intercepto"] + tl["pendiente"] * x, name="Lineal",
                              line=dict(color=GRIS, width=1.8)))
     fig.add_trace(go.Scatter(x=x, y=te["a"] * np.exp(te["b"] * x), name="Exponencial",
-                             line=dict(color=ROJO, dash="dash", width=1.8)))
+                             line=dict(color=CARBON, dash="dash", width=1.6)))
     fig.update_xaxes(title_text="x (mes)")
     grafica(layout(fig, "Precio de SORIANA B"), c1)
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=x, y=s["inflacion_anual"] * 100, mode="markers", name="Inflación",
-                             marker=dict(color=AZUL, size=6, opacity=0.8)))
+                             marker=dict(color=PRIM, size=6, opacity=0.8)))
     fig.add_trace(go.Scatter(x=x, y=(il["intercepto"] + il["pendiente"] * x) * 100, name="Lineal",
                              line=dict(color=GRIS, width=1.8)))
     fig.add_trace(go.Scatter(x=x, y=ie["a"] * np.exp(ie["b"] * x) * 100, name="Exponencial",
-                             line=dict(color=ROJO, dash="dash", width=1.8)))
+                             line=dict(color=CARBON, dash="dash", width=1.6)))
     fig.update_xaxes(title_text="x (mes)")
     fig.update_yaxes(title_text="%")
     grafica(layout(fig, "Inflación anual"), c2)
@@ -684,9 +706,9 @@ with tabs[1]:
     xs = np.linspace(si["rend_ipc"].min(), si["rend_ipc"].max(), 20)
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=si["rend_ipc"] * 100, y=si["rend_soriana"] * 100, mode="markers",
-                             name="Meses", marker=dict(color=AZUL, size=7, opacity=0.8)))
+                             name="Meses", marker=dict(color=PRIM, size=7, opacity=0.8)))
     fig.add_trace(go.Scatter(x=xs * 100, y=(rg["intercepto"] + rg["pendiente"] * xs) * 100, name="Regresión",
-                             line=dict(color=ROJO, dash="dash", width=1.8)))
+                             line=dict(color=CARBON, dash="dash", width=1.6)))
     fig.update_xaxes(title_text="Rendimiento IPC (%)")
     fig.update_yaxes(title_text="Rendimiento SORIANA B (%)")
     grafica(layout(fig, "Rendimientos mensuales"), c2)
@@ -707,9 +729,9 @@ with tabs[2]:
     xs = np.linspace(sd["rend_ipc"].min(), sd["rend_ipc"].max(), 20)
     fig = go.Figure()
     fig.add_trace(go.Scattergl(x=sd["rend_ipc"] * 100, y=sd["rend_soriana"] * 100, mode="markers",
-                               name="Días", marker=dict(color=AZUL, size=4, opacity=0.4)))
+                               name="Días", marker=dict(color=PRIM, size=4, opacity=0.4)))
     fig.add_trace(go.Scatter(x=xs * 100, y=(EST["alfa"] + EST["beta"] * xs) * 100,
-                             name=f"y = {EST['alfa']:.5f} + {EST['beta']:.4f}x", line=dict(color=ROJO, width=2.2)))
+                             name=f"y = {EST['alfa']:.5f} + {EST['beta']:.4f}x", line=dict(color=CARBON, width=2.2)))
     fig.update_xaxes(title_text="Rendimiento diario IPC (%)")
     fig.update_yaxes(title_text="Rendimiento diario SORIANA B (%)")
     grafica(layout(fig, "Regresión de rendimientos diarios", 420))
@@ -736,8 +758,8 @@ with tabs[2]:
             {"Método": "3. Último nivel / 100", "Rf": fp(EST["rf_metodos"][3], 4)},
         ])
         tabla(rf_tab, indice=False, izq=("Método",),
-              estilos={(p["metodo_rf"] - 1, 0): "font-weight:700;color:#1F3864",
-                       (p["metodo_rf"] - 1, 1): "font-weight:700;color:#1F3864"})
+              estilos={(p["metodo_rf"] - 1, 0): "font-weight:700;color:#B23A33",
+                       (p["metodo_rf"] - 1, 1): "font-weight:700;color:#B23A33"})
 
     seccion("Costo de la deuda (fuentes al 2T26)",
             f"Tasa del arrendamiento = ({p['gastos_financieros_trim']:,.0f} × 4 − Σ monto × tasa de las tres deudas) "
@@ -810,8 +832,8 @@ with tabs[3]:
                   fm(pu["no_controladora"], 0), fm(V["equity_value"])]
         fig = go.Figure(go.Waterfall(
             x=etiquetas, y=valores, measure=medidas, text=textos, textposition="outside",
-            increasing=dict(marker=dict(color=VERDE)), decreasing=dict(marker=dict(color=ROJO)),
-            totals=dict(marker=dict(color=AZUL)), connector=dict(line=dict(color="#C5CBD6"))))
+            increasing=dict(marker=dict(color=VERDE_M)), decreasing=dict(marker=dict(color=ROJO)),
+            totals=dict(marker=dict(color=CARBON)), connector=dict(line=dict(color=GRIS_C))))
         fig.update_yaxes(title_text="mdp")
         grafica(layout(fig, "Cascada de Enterprise Value a Equity Value", 440))
     else:
@@ -880,20 +902,20 @@ with tabs[5]:
             fondo, letra = color_calor(z[i, j], vmin, vmax)
             estilos[(i, j)] = f"background:{fondo};color:{letra};text-align:center"
             if i == i_base and j == j_base:
-                estilos[(i, j)] += f";outline:3px solid {ROJO};outline-offset:-3px;font-weight:700"
+                estilos[(i, j)] += f";outline:3px solid {CARBON};outline-offset:-3px;font-weight:700"
     tabla(vista, estilos=estilos)
 
     seccion("Gráficas de una variable", "La línea punteada marca el valor actual de cada variable.")
     c1, c2 = st.columns(2)
     cv = m.curva(p, DATA, EST, escenario, "inflacion", np.arange(0.01, 0.0601, 0.0025))
-    fig = go.Figure(go.Scatter(x=cv["x"] * 100, y=cv["y"], line=dict(color=AZUL, width=2.4)))
+    fig = go.Figure(go.Scatter(x=cv["x"] * 100, y=cv["y"], line=dict(color=PRIM, width=2.4)))
     fig.add_vline(x=p["inflacion_lp"] * 100, line=dict(color=GRIS, dash="dot"))
     fig.update_xaxes(title_text="Inflación de largo plazo (%)")
     fig.update_yaxes(title_text="$ por acción")
     grafica(layout(fig, "Inflación vs valor por acción"), c1)
 
     cv = m.curva(p, DATA, EST, escenario, "wacc", np.arange(max(V["g"] + 0.005, 0.05), 0.1301, 0.0025))
-    fig = go.Figure(go.Scatter(x=cv["x"] * 100, y=cv["y"], line=dict(color=AZUL, width=2.4)))
+    fig = go.Figure(go.Scatter(x=cv["x"] * 100, y=cv["y"], line=dict(color=PRIM, width=2.4)))
     fig.add_vline(x=V["wacc"] * 100, line=dict(color=GRIS, dash="dot"))
     fig.update_xaxes(title_text="WACC (%)")
     fig.update_yaxes(title_text="$ por acción")
@@ -901,7 +923,7 @@ with tabs[5]:
 
     c1, c2 = st.columns(2)
     cv = m.curva(p, DATA, EST, escenario, "crecimiento", np.arange(-0.05, 0.0501, 0.005))
-    fig = go.Figure(go.Scatter(x=cv["x"] * 100, y=cv["y"], line=dict(color=AZUL, width=2.4)))
+    fig = go.Figure(go.Scatter(x=cv["x"] * 100, y=cv["y"], line=dict(color=PRIM, width=2.4)))
     fig.add_vline(x=float(np.mean(R["proyeccion"].loc["Crecimiento de ventas"])) * 100,
                   line=dict(color=GRIS, dash="dot"))
     fig.update_xaxes(title_text="Crecimiento promedio de ventas 2026–2030 (%)")
@@ -909,7 +931,7 @@ with tabs[5]:
     grafica(layout(fig, "Crecimiento vs Enterprise Value"), c1)
 
     cv = m.curva(p, DATA, EST, escenario, "beta", np.arange(0, 1.501, 0.05))
-    fig = go.Figure(go.Scatter(x=cv["x"], y=cv["y"] * 100, line=dict(color=AZUL, width=2.4)))
+    fig = go.Figure(go.Scatter(x=cv["x"], y=cv["y"] * 100, line=dict(color=PRIM, width=2.4)))
     fig.add_vline(x=CC["beta"]["usado"], line=dict(color=GRIS, dash="dot"))
     fig.update_xaxes(title_text="Beta")
     fig.update_yaxes(title_text="Ke (%)")
@@ -922,10 +944,10 @@ with tabs[5]:
         c1, c2 = st.columns([3, 2])
         fig = go.Figure()
         fig.add_trace(go.Bar(y=tor["Variable"], x=tor["-10%"] - base, base=base, orientation="h",
-                             name="Variable −10%", marker_color=AZUL_CLARO,
+                             name="Variable −10%", marker_color=PRIM_CL,
                              hovertemplate="%{y}: $%{x:,.2f}<extra>−10%</extra>"))
         fig.add_trace(go.Bar(y=tor["Variable"], x=tor["+10%"] - base, base=base, orientation="h",
-                             name="Variable +10%", marker_color=AZUL,
+                             name="Variable +10%", marker_color=PRIM,
                              hovertemplate="%{y}: $%{x:,.2f}<extra>+10%</extra>"))
         fig.add_vline(x=base, line=dict(color="#344054", width=1))
         fig.update_layout(barmode="overlay")
