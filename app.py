@@ -134,27 +134,110 @@ st.markdown(
                                                             border-radius: 8px; padding: 6px 10px; margin-bottom: 4px; width: 100%; }}
     [data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) {{ background: {PRIM_FONDO};
                                                                               border-color: {PRIM_CL}; }}
+    [data-testid="stSidebar"] [data-testid="stTextInputRootElement"] {{ border: 1px solid #E2DDDA; border-radius: 8px;
+        background: #FAF9F8; transition: border-color .2s ease, box-shadow .2s ease; }}
+    [data-testid="stSidebar"] [data-testid="stTextInputRootElement"]:focus-within {{ border-color: {PRIM_CL};
+        box-shadow: 0 0 0 3px {PRIM_FONDO}; }}
+    [data-testid="stSidebar"] input {{ font-variant-numeric: tabular-nums; }}
+
+    /* Animaciones: entrada suave, realce al pasar el cursor y transiciones */
+    @keyframes aparecer {{ from {{ opacity: 0; transform: translateY(10px); }} to {{ opacity: 1; transform: none; }} }}
+    @keyframes desvanecer {{ from {{ opacity: 0; }} to {{ opacity: 1; }} }}
+    @keyframes franja {{ from {{ transform: scaleX(0); }} to {{ transform: scaleX(1); }} }}
+    .hero {{ animation: aparecer .6s cubic-bezier(.2,.7,.2,1) both; }}
+    .hero .franja {{ transform-origin: left; animation: franja 1s cubic-bezier(.2,.7,.2,1) .15s both; }}
+    .hero .precio {{ animation: aparecer .6s cubic-bezier(.2,.7,.2,1) .2s both; }}
+    .tarjeta, .tabla-wrap, .nota, .seccion {{ animation: aparecer .5s cubic-bezier(.2,.7,.2,1) both; }}
+    [data-testid="stColumn"]:nth-child(2) .tarjeta {{ animation-delay: .06s; }}
+    [data-testid="stColumn"]:nth-child(3) .tarjeta {{ animation-delay: .12s; }}
+    [data-testid="stColumn"]:nth-child(4) .tarjeta {{ animation-delay: .18s; }}
+    [data-testid="stColumn"]:nth-child(5) .tarjeta {{ animation-delay: .24s; }}
+    [data-testid="stPlotlyChart"] {{ animation: desvanecer .7s ease-out .1s both; }}
+    [data-testid="stTabPanel"] > div {{ animation: desvanecer .35s ease-out both; }}
+    .tarjeta, .tabla-wrap, .hero .chip, [data-testid="stSidebar"] [data-testid="stExpander"] details {{
+        transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease, background-color .2s ease; }}
+    .tarjeta:hover {{ transform: translateY(-3px); box-shadow: 0 8px 20px rgba(67,70,79,.10); border-color: #DCD6D2; }}
+    .tarjeta.destacada:hover {{ border-color: {PRIM_CL}; }}
+    .tabla-wrap:hover {{ box-shadow: 0 4px 14px rgba(67,70,79,.07); }}
+    table.tf td {{ transition: background-color .15s ease; }}
+    .hero .chip:hover {{ transform: translateY(-1px); }}
+    [data-testid="stSidebar"] [data-testid="stExpander"] details:hover {{ border-color: #DCD6D2; }}
+    button {{ transition: background-color .2s ease, border-color .2s ease, color .2s ease, transform .1s ease !important; }}
+    button:active {{ transform: scale(.98); }}
+    [data-baseweb="tab"] p {{ transition: color .2s ease; }}
+    [data-baseweb="tab"]:hover p {{ color: {PRIM}; }}
+    [data-baseweb="tab-highlight"] {{ transition: all .3s cubic-bezier(.2,.7,.2,1) !important; }}
+    @media (prefers-reduced-motion: reduce) {{
+      *, *::before, *::after {{ animation: none !important; transition: none !important; }}
+    }}
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-# Los campos numéricos de Streamlit capturan la rueda del mouse y bloquean el scroll de la barra lateral.
-# Este script detiene el evento antes de que llegue al campo, así la página hace scroll normalmente.
+# Las cifras de las tarjetas y del encabezado se animan (conteo) al aparecer y al cambiar de valor.
 st.html(
-    """
+    r"""
     <script>
     (function () {
-      if (window.__sorianaScroll) { return; }
-      window.__sorianaScroll = true;
-      window.addEventListener("wheel", function (e) {
-        var t = e.target;
-        if (t && t.closest && t.closest('[data-testid="stNumberInput"], input[type="number"]')) {
-          var a = document.activeElement;
-          if (a && a.type === "number") { a.blur(); }
-          e.stopPropagation();
+      if (window.__sorianaConteo) { return; }
+      window.__sorianaConteo = true;
+      var quieto = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      var previos = {};
+      var patron = /^([^0-9+\-]*)([+\-]?)([0-9][0-9,]*\.?[0-9]*)(.*)$/;
+      function escribir(el, txt) {
+        // Se modifica el nodo de texto existente para no romper la referencia que usa Streamlit.
+        var t = el.firstChild;
+        el.__escrito = txt;
+        if (t && t.nodeType === 3) { t.nodeValue = txt; } else { el.textContent = txt; }
+      }
+      function animar(el) {
+        var texto = el.textContent.trim();
+        if (texto === el.__escrito) { return; }
+        var clave = el.getAttribute("data-anim");
+        if (el.__raf) { cancelAnimationFrame(el.__raf); }
+        var m = texto.match(patron);
+        if (!m) { previos[clave] = undefined; el.__escrito = texto; return; }
+        var pre = m[1], signo = m[2], num = m[3], suf = m[4];
+        var dec = (num.split(".")[1] || "").length;
+        var meta = parseFloat(num.replace(/,/g, "")) * (signo === "-" ? -1 : 1);
+        var dur = 800, ahora = performance.now(), p = previos[clave], desde, inicio;
+        if (p && p.meta === meta && ahora - p.inicio < dur) {
+          // Streamlit reemplazó el elemento a mitad de la animación: se continúa en el nuevo.
+          desde = p.desde; inicio = p.inicio;
+        } else if (p && p.meta === meta) {
+          el.__escrito = texto; return;
+        } else {
+          desde = p ? p.meta : 0; inicio = ahora;
+          previos[clave] = { meta: meta, desde: desde, inicio: inicio };
         }
-      }, { capture: true, passive: true });
+        if (quieto) { el.__escrito = texto; return; }
+        function cuadro(t) {
+          var k = Math.min(1, Math.max(0, (performance.now() - inicio) / dur));
+          var e = 1 - Math.pow(1 - k, 3);
+          var v = desde + (meta - desde) * e;
+          var s = Math.abs(v).toLocaleString("en-US", { minimumFractionDigits: dec, maximumFractionDigits: dec });
+          var sg = v < 0 ? "-" : (signo === "+" ? "+" : "");
+          if (k < 1) { escribir(el, pre + sg + s + suf); el.__raf = requestAnimationFrame(cuadro); }
+          else { escribir(el, texto); el.__raf = null; }
+        }
+        el.__raf = requestAnimationFrame(cuadro);
+      }
+      function revisar(n) {
+        if (!n) { return; }
+        var el = n.nodeType === 3 ? n.parentElement : n;
+        if (!el || !el.closest) { return; }
+        var propio = el.closest("[data-anim]");
+        if (propio) { animar(propio); }
+        if (el.querySelectorAll) { el.querySelectorAll("[data-anim]").forEach(animar); }
+      }
+      new MutationObserver(function (cambios) {
+        cambios.forEach(function (c) {
+          if (c.type === "characterData") { revisar(c.target); }
+          else { revisar(c.target); c.addedNodes.forEach(revisar); }
+        });
+      }).observe(document.body, { childList: true, subtree: true, characterData: true });
+      document.querySelectorAll("[data-anim]").forEach(animar);
     })();
     </script>
     """,
@@ -238,6 +321,7 @@ def layout(fig, titulo=None, alto=360):
         hoverlabel=dict(font_family=FUENTE, bgcolor="#FFFFFF", bordercolor="#D0D5DD"),
         plot_bgcolor="#FFFFFF",
         paper_bgcolor="#FFFFFF",
+        transition=dict(duration=600, easing="cubic-in-out"),
     )
     fig.update_xaxes(gridcolor="#EEF1F5", zerolinecolor="#D0D5DD", linecolor="#D0D5DD", title_font=dict(size=11))
     fig.update_yaxes(gridcolor="#EEF1F5", zerolinecolor="#D0D5DD", title_font=dict(size=11))
@@ -261,9 +345,11 @@ def seccion(titulo, descripcion=None, dest=None):
 
 
 def tarjeta(col, etiqueta, valor, sub="", clase="", destacada=False):
+    _CONTADOR["t"] = _CONTADOR.get("t", 0) + 1
     col.markdown(
         f"<div class='tarjeta{' destacada' if destacada else ''}'><div class='etq'>{h(etiqueta)}</div>"
-        f"<div class='val {clase}'>{h(valor)}</div><div class='sub'>{h(sub)}</div></div>",
+        f"<div class='val {clase}' data-anim='t{_CONTADOR['t']}'>{h(valor)}</div>"
+        f"<div class='sub'>{h(sub)}</div></div>",
         unsafe_allow_html=True,
     )
 
@@ -319,12 +405,43 @@ def restablecer():
             del st.session_state[k]
 
 
+def _decimales(fmt):
+    return int(fmt.split(".")[1][0]) if fmt and "." in fmt else 2
+
+
+def _texto(v, dec):
+    return f"{v:,.{dec}f}"
+
+
+def _leer(texto):
+    """Convierte el texto capturado a número; acepta comas, %, $ y espacios."""
+    try:
+        return float(str(texto).replace(",", "").replace("%", "").replace("$", "").replace(" ", ""))
+    except ValueError:
+        return None
+
+
+def campo(label, k, valor, dec, minimo=None, ayuda=None, disabled=False, oculto=False):
+    """Campo numérico como texto: no captura la rueda del mouse, así la barra lateral hace scroll normal.
+    Si el texto coincide con el valor por defecto formateado, se usa el valor exacto (sin redondear)."""
+    defecto = _texto(valor, dec)
+    st.session_state.setdefault(k, defecto)
+    txt = st.text_input(label, key=k, help=ayuda, disabled=disabled,
+                        label_visibility="collapsed" if oculto else "visible")
+    if txt.strip() == defecto:
+        return valor
+    v = _leer(txt)
+    if v is None or (minimo is not None and v < minimo):
+        st.caption(f":red[Valor no válido; se usa {defecto}]")
+        return valor
+    return v
+
+
 def num(label, clave, default, pct=False, paso=None, fmt=None, minimo=None, ayuda=None):
     """Número editable. Si pct=True se muestra en % y se devuelve en decimal."""
-    k = PREFIJO + clave
-    st.session_state.setdefault(k, float(default * 100 if pct else default))
-    v = st.number_input(label, key=k, step=paso or (0.01 if pct else 1.0),
-                        format=fmt or ("%.4f" if pct else "%.2f"), min_value=minimo, help=ayuda)
+    base = default * 100 if pct else default
+    v = campo(label, PREFIJO + clave, base, _decimales(fmt or ("%.4f" if pct else "%.2f")),
+              minimo=None if minimo is None else (minimo * 100 if pct else minimo), ayuda=ayuda)
     return v / 100 if pct else v
 
 
@@ -332,13 +449,16 @@ def manual(label, clave, calculado, pct=True, fmt="%.4f", paso=None, mostrar_dec
     """Patrón calculado / manual / usado del Excel."""
     kc, kv = PREFIJO + clave + "_usar", PREFIJO + clave + "_valor"
     st.session_state.setdefault(kc, False)
-    st.session_state.setdefault(kv, float(calculado * 100 if pct else calculado))
     texto = fp(calculado, mostrar_dec) if pct else f"{calculado:,.{mostrar_dec}f}"
     st.markdown(f"<div class='manual-etq'>{h(label)} · calculado <code>{h(texto)}</code></div>",
                 unsafe_allow_html=True)
+    base = calculado * 100 if pct else calculado
+    if not st.session_state[kc]:
+        # Mientras no se use, el campo muestra el valor calculado vigente.
+        st.session_state[kv] = _texto(base, _decimales(fmt))
     usar = st.checkbox("Usar valor manual", key=kc)
-    v = st.number_input(f"{label} manual" + (" (%)" if pct else ""), key=kv, format=fmt,
-                        step=paso or 0.01, disabled=not usar, label_visibility="collapsed")
+    v = campo(f"{label} manual" + (" (%)" if pct else ""), kv, base, _decimales(fmt), disabled=not usar,
+              oculto=True)
     if not usar:
         return None
     return v / 100 if pct else v
@@ -485,7 +605,7 @@ hero = "".join([
     "</div></div>",
     "<div class='precio'>",
     "<div class='etq'>Valor estimado por acción</div>",
-    f"<div class='val'>{h(fd(V['valor_por_accion']))}</div>",
+    f"<div class='val' data-anim='hero'>{h(fd(V['valor_por_accion']))}</div>",
     chip_dif,
     f"<div class='sub'>Precio de mercado {h(fd(p['precio_mercado']))} · {h(EMP['fecha_precio'])}</div>",
     "</div></div></div>",
