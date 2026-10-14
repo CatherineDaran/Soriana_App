@@ -15,6 +15,8 @@ Cualquier cambio en una variable recalcula toda la cadena:
 | `app.py` | Interfaz de Streamlit: barra lateral con variables y 8 pestañas. |
 | `modelo.py` | Motor de cálculo con funciones puras (regresiones, beta, WACC, FCFF, valuación, escenarios, sensibilidad, validación). |
 | `reporte_pdf.py` | Genera el reporte PDF con reportlab y gráficas de matplotlib. |
+| `interfaz.py` | Barra de íconos (cuando la barra lateral está cerrada) y tutorial de bienvenida. |
+| `assets/` | Logotipo e ícono de Soriana. |
 | `test_modelo.py` | Pruebas con pytest contra los resultados del Excel (tolerancia 0.01%). |
 | `datos_modelo_soriana.json` | Datos de entrada extraídos del Excel. Es la única fuente de datos de la app. |
 | `Estudio_Financiero_Soriana.xlsx` | Opcional. Si está en la carpeta, la pestaña de validación lee sus celdas con `openpyxl`; si no, usa `resultados_excel_para_validar` del JSON. |

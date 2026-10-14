@@ -14,6 +14,7 @@ import plotly.graph_objects as go
 import streamlit as st
 from plotly.subplots import make_subplots
 
+import interfaz
 import modelo as m
 import reporte_pdf
 
@@ -245,6 +246,13 @@ st.html(
 )
 
 
+LOGO = interfaz.imagen_b64("logo_soriana.png")
+ICONO = interfaz.imagen_b64("icono_soriana.png")
+st.markdown(interfaz.css(PRIM, PRIM_CL, CARBON, GRIS_TEXTO), unsafe_allow_html=True)
+# Barra de íconos (visible con la barra lateral cerrada) y tutorial de bienvenida.
+st.html(interfaz.script(LOGO, ICONO), unsafe_allow_javascript=True)
+
+
 # ---------------------------------------------------------------------------
 # Datos y cálculos que no dependen de las variables editables
 # ---------------------------------------------------------------------------
@@ -465,6 +473,7 @@ def manual(label, clave, calculado, pct=True, fmt="%.4f", paso=None, mostrar_dec
 
 
 with st.sidebar:
+    st.markdown(f"<div class='lateral-logo'><img src='{LOGO}' alt='Soriana'></div>", unsafe_allow_html=True)
     st.markdown(f"<div class='lateral-titulo'><div class='t'>Variables del modelo</div>"
                 f"<div class='s'>{h(EMP['emisora'])} · valuación por FCFF</div></div>", unsafe_allow_html=True)
 
@@ -618,8 +627,11 @@ if not V["valido"]:
 if abs(ESC["suma_prob"] - 1) > 1e-9:
     st.info(f"Las probabilidades de los escenarios suman {fp(ESC['suma_prob'], 0)}, no 100%.")
 
-tabs = st.tabs(["Dashboard", "Inflación y mercado", "Beta y WACC", "Proyección y valuación", "Escenarios",
-                "Sensibilidad", "Validación contra Excel", "Reporte PDF"], key="pestana")
+tabs = st.tabs([":material/space_dashboard: Dashboard", ":material/show_chart: Inflación y mercado",
+                ":material/functions: Beta y WACC", ":material/table_chart: Proyección",
+                ":material/stacks: Escenarios", ":material/tune: Sensibilidad",
+                ":material/fact_check: Validación Excel", ":material/picture_as_pdf: Reporte PDF"],
+               key="pestana")
 
 
 # ---------------------------------------------------------------------------
@@ -707,6 +719,7 @@ def boton_pdf(dest, clave, primario=True):
 
 
 boton_pdf(st.sidebar, "pdf_lateral", primario=False)
+st.sidebar.html(interfaz.boton_tutorial(), unsafe_allow_javascript=True)
 
 
 # ---------------------------------------------------------------------------
