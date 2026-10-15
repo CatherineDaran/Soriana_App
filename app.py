@@ -32,6 +32,7 @@ GRIS_C = "#D9D5D2"
 GRIS_TEXTO = "#62646B"
 VERDE = "#3E8A3A"      # diferencias positivas
 ROJO = "#B23A33"       # diferencias negativas
+VERSION = "v2.4 · 15-oct-2026"  # se muestra al pie de la barra lateral
 FUENTE = "Inter, 'Helvetica Neue', Arial, sans-serif"
 
 st.set_page_config(page_title="Valuación SORIANA B", layout="wide", initial_sidebar_state="expanded")
@@ -720,6 +721,7 @@ def boton_pdf(dest, clave, primario=True):
 
 boton_pdf(st.sidebar, "pdf_lateral", primario=False)
 st.sidebar.html(interfaz.boton_tutorial(), unsafe_allow_javascript=True)
+st.sidebar.caption(f"{EMP['estudiante']} · {VERSION}")
 
 
 # ---------------------------------------------------------------------------
