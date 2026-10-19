@@ -51,24 +51,28 @@ SECCIONES = [
 ]
 
 PASOS_TUTORIAL = [
-    ("Bienvenida",
-     "Esta app valúa <b>Organización Soriana (SORIANA B)</b> con flujos de caja descontados (FCFF) y "
-     "reproduce el modelo de Excel. Incluye valor por acción, tres escenarios, sensibilidad, validación "
-     "contra el Excel y un reporte PDF."),
+    ("Bienvenido",
+     "Esta app valúa <b>Organización Soriana (SORIANA B)</b> como en el reporte del Reto Banamex: por "
+     "<b>flujos descontados (DCF)</b>, por <b>empresas comparables</b> y por <b>transacciones precedentes</b>. "
+     "Los tres métodos se combinan en un <b>precio objetivo a 12 meses</b> con su recomendación."),
     ("Mueve las variables",
-     "En la <b>barra lateral</b> eliges el escenario y editas las variables por grupo: Económicas, Mercado, "
-     "Financieras y Valuación. Cada cambio recalcula toda la cadena: "
-     "<b>Beta → WACC → Flujos → Valor terminal → EV → Equity → Valor por acción</b>. "
-     "Con <i>Usar valor manual</i> reemplazas un valor calculado."),
+     "En la <b>barra lateral</b> eliges el escenario (conservador, base u optimista) y editas las variables por "
+     "grupo: Económicas, Mercado, Financieras, Valuación y Ajustes de escenarios. Cada cambio recalcula toda la "
+     "cadena, de la beta al valor por acción. El WACC se usa <b>redondeado a 7.88%</b>, como en el reporte; con "
+     "<i>Usar valor manual</i> puedes reemplazarlo. <b>Restablecer valores del Excel</b> regresa todo al inicio."),
     ("Explora las pestañas",
-     "<b>Dashboard</b> resume el valor por acción y el precio objetivo. <b>DCF</b> agrupa inflación y mercado, beta "
-     "y WACC, proyección, escenarios y sensibilidad. <b>Valuación relativa</b> tiene empresas comparables y "
-     "transacciones precedentes; <b>Precio objetivo</b> combina los tres métodos con el football field y LSEG, y "
-     "<b>Contexto financiero</b> resume las razones 2021–2025."),
+     "<b>Dashboard</b> resume el valor por acción, el precio objetivo y la recomendación. <b>DCF</b> agrupa "
+     "inflación y mercado, beta y WACC, proyección, escenarios y sensibilidad. En <b>Valuación relativa</b> "
+     "marcas o desmarcas los comparables y las transacciones, y eliges el estadístico (media, mediana, "
+     "percentiles)."),
+    ("Precio objetivo y contexto",
+     "<b>Precio objetivo</b> pondera los tres métodos (puedes cambiar las ponderaciones y la regla del equipo "
+     "para comprar, mantener o vender) y muestra el rango de valuación (football field) y el contraste con "
+     "LSEG. <b>Contexto financiero</b> resume márgenes y razones de 2021 a 2025."),
     ("Valida y descarga",
-     "<b>Validación</b> compara la app con el Excel integrador y con el reporte Banamex. <b>Descargar reporte PDF</b> genera "
-     "el reporte con los valores en pantalla. Puedes volver a ver esta guía con <b>Ver tutorial</b> en la barra "
-     "lateral o con el ícono <b>?</b> cuando está cerrada."),
+     "<b>Validación</b> compara la app con el Excel integrador y con el reporte Banamex. <b>Descargar reporte "
+     "PDF</b> genera el reporte con los valores en pantalla. Al cerrar la barra lateral quedan sus íconos a la "
+     "izquierda. Vuelve a ver esta guía con <b>Ver tutorial</b> o con el ícono <b>?</b>."),
 ]
 
 
@@ -145,6 +149,22 @@ def css(prim: str, prim_cl: str, carbon: str, gris_texto: str) -> str:
     .abrir-tutorial svg {{ width: 17px; height: 17px; }}
     .abrir-tutorial:hover {{ border-color: {prim_cl}; color: {prim}; background: #FFFFFF; }}
 
+    /* Pantalla de inicio: el logo se llena de color de arriba hacia abajo */
+    #splash {{ position: fixed; inset: 0; z-index: 1000020; background: #FFFFFF; display: flex;
+               flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+               transition: opacity .45s ease, visibility .45s ease; }}
+    #splash.salir {{ opacity: 0; visibility: hidden; }}
+    #splash .logo {{ position: relative; width: min(300px, 70vw); }}
+    #splash .logo img {{ display: block; width: 100%; height: auto; }}
+    #splash .logo .base {{ filter: grayscale(1); opacity: .16; }}
+    #splash .logo .relleno {{ position: absolute; inset: 0; clip-path: inset(0 0 100% 0);
+                              animation: llenarLogo 1.25s cubic-bezier(.45,.05,.35,1) .2s forwards; }}
+    @keyframes llenarLogo {{ to {{ clip-path: inset(0 0 0 0); }} }}
+    #splash .texto {{ font-family: Inter, "Helvetica Neue", Arial, sans-serif; font-size: .82rem; letter-spacing: .08em;
+                      text-transform: uppercase; color: {gris_texto}; opacity: 0;
+                      animation: splashTexto .5s ease-out .9s forwards; }}
+    @keyframes splashTexto {{ from {{ opacity: 0; transform: translateY(6px); }} to {{ opacity: 1; transform: none; }} }}
+
     /* Tutorial */
     #tutorial {{ position: fixed; inset: 0; z-index: 1000010; display: none; align-items: center;
                  justify-content: center; background: rgba(38,40,46,.42); backdrop-filter: blur(3px);
@@ -182,6 +202,8 @@ def css(prim: str, prim_cl: str, carbon: str, gris_texto: str) -> str:
     #tutorial .siguiente:hover {{ background: #9C302A; }}
     @media (prefers-reduced-motion: reduce) {{
       #riel, #tutorial, #tutorial * {{ animation: none !important; transition: none !important; }}
+      #splash .logo .relleno {{ animation: none; clip-path: none; }}
+      #splash .texto {{ animation: none; opacity: 1; }}
     }}
     </style>
     """
@@ -219,7 +241,7 @@ def _codigo(logo: str, icono: str, riel: str, pasos: str) -> str:
     (function () {{
       if (window.__sorianaInterfaz) {{ return; }}
       window.__sorianaInterfaz = true;
-      var CLAVE = "soriana_tutorial_visto_v1";
+      var CLAVE = "soriana_tutorial_visto_v2";
       var PASOS = [{pasos}];
 
       // ---------- Barra de íconos ----------
@@ -331,7 +353,21 @@ def _codigo(logo: str, icono: str, riel: str, pasos: str) -> str:
       // Solo se muestra automáticamente la primera vez.
       var visto = false;
       try {{ visto = window.localStorage.getItem(CLAVE) === "1"; }} catch (e) {{ visto = !!window.__sorianaTutorialVisto; }}
-      if (!visto) {{ setTimeout(abrirTutorial, 900); }}
+      // ---------- Pantalla de inicio ----------
+      var DURACION_SPLASH = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 500 : 1900;
+      var splash = document.createElement("div");
+      splash.id = "splash";
+      splash.setAttribute("aria-hidden", "true");
+      splash.innerHTML =
+        '<div class="logo"><img class="base" src="{logo}" alt=""><div class="relleno">' +
+        '<img src="{logo}" alt=""></div></div><div class="texto">Valuación SORIANA B · Reto Banamex</div>';
+      document.body.appendChild(splash);
+      setTimeout(function () {{
+        splash.classList.add("salir");
+        setTimeout(function () {{ if (splash.parentNode) {{ splash.parentNode.removeChild(splash); }} }}, 600);
+      }}, DURACION_SPLASH);
+
+      if (!visto) {{ setTimeout(abrirTutorial, DURACION_SPLASH + 350); }}
     }})();
     """
 
