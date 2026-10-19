@@ -31,6 +31,7 @@ from reportlab.platypus import (  # noqa: E402
 )
 
 import modelo as m  # noqa: E402
+import relativa  # noqa: E402
 
 from reportlab.pdfbase import pdfmetrics  # noqa: E402
 from reportlab.pdfbase.ttfonts import TTFont  # noqa: E402
@@ -213,7 +214,28 @@ def _tabla(filas, anchos=None, encabezado=True, alinear_der_desde=1):
     return t
 
 
-def generar_pdf(p: dict, data: dict, est: dict, escenario: str = "Base") -> bytes:
+def grafica_football(vr: dict, precio: float) -> io.BytesIO:
+    rangos = [(k, a, b) for k, (a, b) in vr["rangos"].items() if a is not None and b is not None]
+    fig, ax = plt.subplots(figsize=(7, 2.9))
+    colores = [AZUL, PRIM_CL, "#4A90BE", SEC_CL, VERDE_M]
+    for i, (k, a, b) in enumerate(rangos):
+        ax.barh(i, b - a, left=a, color=colores[i % len(colores)], height=0.55)
+        ax.text(b + 0.8, i, f"${a:,.2f} – ${b:,.2f}", va="center", fontsize=7)
+    ax.set_yticks(range(len(rangos)), [k for k, _, _ in rangos])
+    ax.invert_yaxis()
+    ax.axvline(precio, color=CARBON, ls="--", lw=1.2, label=f"Precio de mercado ${precio:,.2f}")
+    obj = vr["precio_objetivo"]["objetivo"]
+    if obj is not None:
+        ax.axvline(obj, color=AZUL, lw=1.6, label=f"Precio objetivo ${obj:,.2f}")
+    _estilo(ax)
+    ax.grid(axis="x", color="#E5E5E5", linewidth=0.6)
+    ax.set_xlabel("$ por acción", fontsize=8)
+    ax.legend(fontsize=7, frameon=False, loc="lower right")
+    ax.set_title("Rango de valuación (football field)", fontsize=9, color=AZUL)
+    return _png(fig)
+
+
+def generar_pdf(p: dict, data: dict, est: dict, escenario: str = "Base", vr: dict | None = None) -> bytes:
     emp = data["empresa"]
     infl = m.analisis_inflacion(data)
     ipc = m.analisis_ipc(data)
@@ -226,6 +248,9 @@ def generar_pdf(p: dict, data: dict, est: dict, escenario: str = "Base") -> byte
     tor = m.tornado(p, data, est, escenario)
     val = m.validacion(data, est)
     red = m.efecto_redondeo_wacc(data, est)
+    rel = relativa.cargar_relativa()
+    vr = vr or relativa.valuacion_completa(p, data, est, rel)
+    vb = relativa.validacion_reporte(data, est, rel)
 
     estilos = getSampleStyleSheet()
     h1 = ParagraphStyle("h1", parent=estilos["Heading1"], fontName=FUENTE_B, fontSize=15,
@@ -404,9 +429,88 @@ def generar_pdf(p: dict, data: dict, est: dict, escenario: str = "Base") -> byte
     el.append(_tabla(filas, [5.5 * cm, 3.3 * cm, 3.3 * cm, 3.3 * cm]))
     el.append(Paragraph(f"Valor ponderado por probabilidad: <b>{fd(esc['ponderado'])}</b>.", txt))
 
-    # 15. Gráficas
+    # 15–18. Valuación relativa, precio objetivo, football field y LSEG
     el.append(PageBreak())
-    seccion(15, "Gráficas")
+    seccion(15, "Valuación relativa")
+    co, tr, po = vr["comparables"], vr["transacciones"], vr["precio_objetivo"]
+    el.append(Paragraph(
+        f"<b>Empresas comparables</b> ({rel['comparables']['fuente']}). EV/EBITDA y EV/Ventas: Equity = múltiplo × "
+        f"métrica de Soriana 2025 + ajuste neto ({fm(relativa.ajuste_neto(rel), 0)} mdp); P/U: Equity = P/U × "
+        f"utilidad neta de la controladora. Precio = Equity / {fm(rel['acciones_millones'], 0)} millones de "
+        f"acciones. Estadístico: {co['estadistico'].lower()}.", txt))
+    filas = [["Par", "EV/EBITDA", "EV/Ventas", "P/U", "Incluido"]]
+    for f in co["filas"]:
+        filas.append([f["empresa"], f"{f['ev_ebitda']:.2f}x", f"{f['ev_ventas']:.2f}x", f"{f['p_u']:.2f}x",
+                      "Sí" if f["incluir"] else "No"])
+    el.append(_tabla(filas, [5 * cm, 2.5 * cm, 2.5 * cm, 2.5 * cm, 2 * cm]))
+    el.append(Spacer(1, 4))
+    filas = [["Múltiplo", co["estadistico"], "Precio por acción"]]
+    for k in relativa.MULTIPLOS_COMPARABLES:
+        nom = relativa.NOMBRE_MULTIPLO[k]
+        x = co["estadisticos"].loc[co["estadistico"], nom]
+        filas.append([nom, "n.d." if x is None else f"{x:.3f}x", fd(co["precios"][nom])])
+    filas.append(["Valor por comparables", "", fd(co["valor"])])
+    el.append(_tabla(filas, [5 * cm, 3 * cm, 3.5 * cm]))
+    el.append(Paragraph(
+        "EV/EBITDA es el ancla porque no lo distorsionan la deuda ni los arrendamientos; EV/Ventas sobrevalúa a "
+        "Soriana porque su margen es menor que el de sus pares, y P/U la subvalúa porque su utilidad neta está "
+        "presionada por intereses.", txt))
+    el.append(Spacer(1, 6))
+    el.append(Paragraph(
+        f"<b>Transacciones precedentes</b> ({rel['transacciones']['fuente']}): {tr['n_total']} operaciones → "
+        f"{tr['n_incluidas']} incluidas. La media de EV/EBITDA pasa de {tr['media_ev_ebitda_muestra_completa']:.2f}x "
+        f"con la muestra completa a {(tr['media_ev_ebitda_depurada'] or 0):.2f}x con la muestra depurada.", txt))
+    filas = [["Objetivo", "País", "EV/Ventas", "EV/EBITDA", "EV/EBIT", "Incluida"]]
+    for f in tr["filas"]:
+        filas.append([Paragraph(f["objetivo"], txt), f["pais"]] +
+                     ["n.d." if f[k] is None else f"{f[k]:.2f}x" for k in ("ev_ventas", "ev_ebitda", "ev_ebit")] +
+                     ["Sí" if f["incluir"] else "No"])
+    el.append(_tabla(filas, [5 * cm, 2.3 * cm, 2.1 * cm, 2.1 * cm, 2.1 * cm, 1.7 * cm]))
+    el.append(Spacer(1, 4))
+    filas = [["Múltiplo", tr["estadistico"], "Precio por acción"]]
+    for k in relativa.MULTIPLOS_TRANSACCIONES:
+        nom = relativa.NOMBRE_MULTIPLO[k]
+        x = tr["estadisticos"].loc[tr["estadistico"], nom]
+        filas.append([nom, "n.d." if x is None else f"{x:.3f}x", fd(tr["precios"][nom])])
+    filas.append(["Valor por transacciones", "", fd(tr["valor"])])
+    el.append(_tabla(filas, [5 * cm, 3 * cm, 3.5 * cm]))
+
+    seccion(16, "Precio objetivo y recomendación")
+    pond = po["ponderaciones"]
+    filas = [["Método", "Valor por acción", "Ponderación"],
+             ["DCF (escenario base)", fd(vr["dcf"]), fp(pond["dcf"], 2)],
+             ["Empresas comparables", fd(co["valor"]), fp(pond["comparables"], 2)],
+             ["Transacciones precedentes", fd(tr["valor"]), fp(pond["transacciones"], 2)],
+             ["Precio objetivo (12 meses)", fd(po["objetivo"]), fp(po["suma"], 2)]]
+    el.append(_tabla(filas, [6 * cm, 3.5 * cm, 3 * cm]))
+    pot = po["potencial"]
+    color_rec = {"COMPRAR": VERDE, "VENDER": ROJO}.get(po["recomendacion"], CARBON)
+    u = po["umbrales"]
+    el.append(Paragraph(
+        f"Precio objetivo <b>{fd(po['objetivo'])}</b> contra un precio de mercado de {fd(p['precio_mercado'])}: "
+        f"potencial de <b>{'n.d.' if pot is None else ('+' if pot >= 0 else '') + fp(pot, 1)}</b>. Recomendación: "
+        f"<font color='{color_rec}'><b>{po['recomendacion']}</b></font> (regla del equipo: comprar si el potencial "
+        f"es mayor a {fp(u['comprar'], 0)}, vender si es menor a {fp(u['vender'], 0)}). DCF con WACC de "
+        f"{fp(vr['wacc'], 4)}. Al precio de mercado Soriana cotiza a {vr['ev_ebitda_al_precio']:.2f}x EV/EBITDA."
+        + (" <font color='#B23A33'>Aviso: las ponderaciones no suman 100%.</font>" if po["aviso"] else ""), txt))
+
+    seccion(17, "Rango de valuación (football field)")
+    el.append(Image(grafica_football(vr, p["precio_mercado"]), width=16.5 * cm, height=6.8 * cm))
+
+    seccion(18, "Contraste con LSEG")
+    lseg = vr["lseg"]
+    filas = [["Empresa", "RIC", "EV/EBITDA", "P/U adelantado", "P/VL"]]
+    for e in lseg["empresas"]:
+        filas.append([e["empresa"], e["ric"], f"{e['ev_ebitda']:.2f}x", f"{e['p_u_fwd']:.1f}x", f"{e['p_vl']:.2f}x"])
+    el.append(_tabla(filas, [3.5 * cm, 3.5 * cm, 2.6 * cm, 2.8 * cm, 2.2 * cm]))
+    el.append(Paragraph(
+        f"Media de EV/EBITDA de los {len(lseg['pares'])} pares (sin Soriana): {lseg['media_pares_ev_ebitda']:.2f}x; "
+        f"precio implícito {fd(lseg['precio_implicito'])}. Soriana cotiza a {lseg['soriana']['p_vl']:.2f}x su valor "
+        f"en libros, la más barata del grupo. Fuente: {rel['lseg']['fuente']}.", txt))
+
+    # 19. Gráficas
+    el.append(PageBreak())
+    seccion(19, "Gráficas")
     el.append(Image(grafica_inflacion(infl), width=16 * cm, height=6.4 * cm))
     el.append(Image(grafica_ipc(ipc), width=16 * cm, height=5.9 * cm))
     el.append(Image(grafica_escenarios(esc, p["precio_mercado"]), width=13.5 * cm, height=5.8 * cm))
@@ -421,8 +525,8 @@ def generar_pdf(p: dict, data: dict, est: dict, escenario: str = "Base") -> byte
         f"{reg['intercepto']:.2f} {reg['pendiente_por_pp']:+.3f} × inflación (pp), R² {reg['r2']:.3f}. "
         f"Correlación de rendimientos mensuales SORIANA–IPC {ipc['regresion']['correlacion']:.4f}.", txt))
 
-    # 16. Validación
-    seccion(16, "Validación contra Excel")
+    # 20. Validación
+    seccion(20, "Validación contra Excel")
     filas = [["Variable", "Excel", "App", "Diferencia", "Dif. %", "Estado"]]
     for _, f in val.iterrows():
         es_tasa = f["Variable"] in ("WACC", "g")
@@ -440,9 +544,20 @@ def generar_pdf(p: dict, data: dict, est: dict, escenario: str = "Base") -> byte
         f"precisión de punto flotante. Si el WACC se redondea a {fp(red['wacc_redondeado'])} el valor por "
         f"acción sale {fd(red['valor_por_accion'])} en lugar de {fd(val.iloc[5]['Excel'])}, por eso la app "
         f"trabaja con el WACC sin redondear.", txt))
+    el.append(Spacer(1, 6))
+    el.append(Paragraph("<b>Validación contra el reporte Banamex</b> (WACC redondeado a 7.88% y valores por defecto; "
+                        "tolerancia ±0.01 en pesos por acción y ±1 mdp en montos).", txt))
+    fmt_u = {"mdp": lambda x: fm(x, 1), "$": fd, "%": lambda x: fp(x, 1), "x": lambda x: f"{x:.2f}x"}
+    filas = [["Concepto", "Reporte", "App", "Estado"]]
+    for f in vb.itertuples():
+        filas.append([f.Concepto, fmt_u[f.Unidad](f.Reporte), fmt_u[f.Unidad](f.App), f.Estado])
+    t = _tabla(filas, [7 * cm, 3 * cm, 3 * cm, 2 * cm])
+    for i, f in enumerate(vb.itertuples(), start=1):
+        t.setStyle(TableStyle([("TEXTCOLOR", (3, i), (3, i), colors.HexColor(VERDE if f.Estado == "PASS" else ROJO))]))
+    el.append(t)
 
-    # 17. Conclusiones
-    seccion(17, "Conclusiones")
+    # 21. Conclusiones
+    seccion(21, "Conclusiones")
     interp = m.interpretacion_escenarios(p, data, est, esc).replace("**", "")
     if v["valor_por_accion"] is not None:
         postura = ("subvaluada" if v["valor_por_accion"] > p["precio_mercado"] else "sobrevaluada")
@@ -458,6 +573,13 @@ def generar_pdf(p: dict, data: dict, est: dict, escenario: str = "Base") -> byte
     else:
         concl = "Con los supuestos actuales el WACC no supera a g, por lo que el modelo no es válido."
     el.append(Paragraph(concl, txt))
+    if po["objetivo"] is not None:
+        el.append(Spacer(1, 4))
+        el.append(Paragraph(
+            f"Al combinar el DCF con la valuación relativa (comparables {fd(co['valor'])}, transacciones "
+            f"{fd(tr['valor'])}), el precio objetivo a 12 meses es {fd(po['objetivo'])}, un potencial de "
+            f"{fp(po['potencial'], 1)} sobre el precio de mercado, por lo que la recomendación es "
+            f"<b>{po['recomendacion']}</b>.", txt))
     el.append(Spacer(1, 10))
     el.append(Paragraph(f"{emp['estudiante']} · {emp['matricula']}", centro))
 

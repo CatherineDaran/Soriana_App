@@ -14,6 +14,9 @@ Cualquier cambio en una variable recalcula toda la cadena:
 |---|---|
 | `app.py` | Interfaz de Streamlit: barra lateral con variables y 8 pestañas. |
 | `modelo.py` | Motor de cálculo con funciones puras (regresiones, beta, WACC, FCFF, valuación, escenarios, sensibilidad, validación). |
+| `relativa.py` | Valuación relativa: estadísticos tipo Excel, comparables, transacciones, precio objetivo, LSEG y validación contra el reporte Banamex. |
+| `test_relativa.py` | Pruebas de la valuación relativa contra el reporte Banamex. |
+| `datos_valuacion_relativa.json` | Datos de comparables, transacciones, LSEG y contexto financiero. |
 | `reporte_pdf.py` | Genera el reporte PDF con reportlab y gráficas de matplotlib. |
 | `interfaz.py` | Barra de íconos (cuando la barra lateral está cerrada) y tutorial de bienvenida. |
 | `assets/` | Logotipo e ícono de Soriana. |
@@ -47,14 +50,21 @@ escenarios $37.3382 y $73.9676, valor ponderado $55.6026 y la matriz de sensibil
 
 ## Pestañas
 
-1. **Dashboard**: tarjetas con precio, valor por acción, diferencia, beta, WACC, g, VT, EV, Equity y escenario;
-   gráficas de inflación vs activo, IPC vs activo, escenarios, valor por acción y mapa de calor WACC–g.
-2. **Inflación y mercado**: series, regresión precio vs inflación, tendencias lineal y exponencial con
-   ecuaciones y R², pronóstico de oct-2026 y regresión contra el IPC.
-3. **Beta y WACC**: dispersión con línea de regresión, patrón calculado / manual / usado, métodos de Rf,
-   tabla de deuda y cálculo paso a paso.
-4. **Proyección y valuación**: tabla del FCFF 2026–2030 y cascada de EV a Equity.
-5. **Escenarios**: justificación editable, tabla comparativa e interpretación automática.
-6. **Sensibilidad**: matriz WACC vs g, gráficas de una variable y tornado ±10%.
-7. **Validación contra Excel**: Variable | Excel | App | Diferencia | Diferencia % | Estado.
-8. **Reporte PDF**: genera y descarga el reporte con los valores en pantalla.
+1. **Dashboard**: tarjetas del DCF (precio, valor por acción, beta, WACC, g, VT, EV, Equity), precio objetivo,
+   potencial, recomendación y valor de cada método; gráficas de inflación, IPC, escenarios y sensibilidad.
+2. **DCF**, con cinco subpestañas:
+   - **Inflación y mercado**: series, regresiones, tendencias lineal y exponencial y pronóstico de oct-2026.
+   - **Beta y WACC**: regresión diaria, calculado / manual / usado, métodos de Rf, deuda y cálculo paso a paso.
+   - **Proyección y valuación**: FCFF 2026–2030 y cascada de EV a Equity.
+   - **Escenarios**: justificación editable, tabla comparativa e interpretación.
+   - **Sensibilidad**: matriz WACC vs g, gráficas de una variable y tornado ±10%.
+3. **Valuación relativa**: **Empresas comparables** y **Transacciones precedentes**, con casillas para incluir
+   o excluir, estadísticos (PERCENTILE.INC), selector de estadístico y precio implícito por múltiplo.
+4. **Precio objetivo**: ponderaciones editables, regla del equipo, recomendación, football field y contraste
+   con LSEG.
+5. **Contexto financiero**: márgenes, razones financieras 2021–2025 y datos clave.
+6. **Validación**: contra el Excel integrador y contra el reporte Banamex (WACC redondeado a 7.88%).
+7. **Reporte PDF**: genera y descarga el reporte con los valores en pantalla (21 secciones).
+
+En la barra lateral, **WACC del DCF** cambia entre el WACC exacto del Excel (7.8819%, $55.55) y el redondeado del
+reporte Banamex (7.88%, $55.58).

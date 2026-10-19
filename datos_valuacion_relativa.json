@@ -1,0 +1,344 @@
+{
+ "_nota": "Datos de valuación relativa, precio objetivo y contexto financiero de Soriana. Fuentes: Valuacion_Multiplos_Soriana.xlsx (S&P Capital IQ Pro), Reporte_Ejecutivo_Soriana_Reto.docx y exportación de LSEG Workspace (oct-2026). Cifras en mdp; múltiplos en veces.",
+ "precio_mercado": 33.1,
+ "fecha_precio": "2026-10-12",
+ "acciones_millones": 1800,
+ "metricas_soriana_2025": {
+  "ingresos": 177515,
+  "ebitda": 11894,
+  "ebit": 7552,
+  "utilidad_neta_controladora": 3307,
+  "capital_contable_controladora": 84595
+ },
+ "puente_ev_equity": {
+  "efectivo": 9295,
+  "asociadas": 4295,
+  "deuda_bursatil_bancaria": 11500,
+  "pasivo_arrendamiento": 12118,
+  "no_controladora": 137,
+  "ajuste_neto": -10165
+ },
+ "comparables": {
+  "fuente": "S&P Capital IQ Pro, Peer Comps, múltiplos LTM, oct-2026",
+  "pares": [
+   {
+    "empresa": "La Comer",
+    "ticker": "LACOMER UBC",
+    "pais": "México",
+    "ev_ebitda": 6.89,
+    "ev_ventas": 0.71,
+    "p_u": 13.42,
+    "incluir": true,
+    "justificacion": "Autoservicio mexicano, mismo canal y consumidor"
+   },
+   {
+    "empresa": "Walmart de México",
+    "ticker": "WALMEX *",
+    "pais": "México",
+    "ev_ebitda": 8.23,
+    "ev_ventas": 0.84,
+    "p_u": 16.05,
+    "incluir": true,
+    "justificacion": "Líder del sector, competidor directo en todos los formatos"
+   },
+   {
+    "empresa": "Chedraui",
+    "ticker": "CHDRAUI B",
+    "pais": "México / EUA",
+    "ev_ebitda": 5.82,
+    "ev_ventas": 0.45,
+    "p_u": 12.96,
+    "incluir": true,
+    "justificacion": "El más parecido en tamaño, formatos y margen"
+   },
+   {
+    "empresa": "El Puerto de Liverpool",
+    "ticker": "LIVEPOL C.1",
+    "pais": "México",
+    "ev_ebitda": 5.22,
+    "ev_ventas": 0.81,
+    "p_u": 7.43,
+    "incluir": true,
+    "justificacion": "Retail mexicano de gran escala; incluido por indicación del profesor"
+   },
+   {
+    "empresa": "Target",
+    "ticker": "TGT",
+    "pais": "EUA",
+    "ev_ebitda": 8.97,
+    "ev_ventas": 0.77,
+    "p_u": 15.87,
+    "incluir": true,
+    "justificacion": "Comparable internacional de gran superficie"
+   }
+  ],
+  "soriana_referencia": {
+   "ev_ebitda": 6.73,
+   "ev_ventas": 0.46,
+   "p_u": 16.0,
+   "nota": "Múltiplos de Soriana en Capital IQ (con precio anterior); no entran en los estadísticos"
+  },
+  "excluidos": "Amazon y Mercado Libre: su negocio es principalmente comercio electrónico"
+ },
+ "transacciones": {
+  "fuente": "S&P Capital IQ Pro, Selected Transactions (alimentos y autoservicio)",
+  "operaciones": [
+   {
+    "objetivo": "111, Inc.",
+    "comprador": "Huadeng Tech BioArray Ventures Ltd",
+    "pais": "China",
+    "anuncio": "2026-09-17",
+    "ev_ventas": 0.1,
+    "ev_ebitda": 47.35,
+    "ev_ebit": null,
+    "incluir": false,
+    "motivo": "Farmacia en línea (otro giro); EV/EBITDA atípico; sin EV/EBIT"
+   },
+   {
+    "objetivo": "ALBIS Co., Ltd.",
+    "comprador": "Life Corporation",
+    "pais": "Japón",
+    "anuncio": "2026-09-08",
+    "ev_ventas": 0.36,
+    "ev_ebitda": 7.54,
+    "ev_ebit": 16.8,
+    "incluir": true,
+    "motivo": "Cadena de supermercados"
+   },
+   {
+    "objetivo": "Agnetta International Pvt. Ltd.",
+    "comprador": "Kati Patang Lifestyle Limited",
+    "pais": "India",
+    "anuncio": "2026-03-03",
+    "ev_ventas": 0.58,
+    "ev_ebitda": null,
+    "ev_ebit": null,
+    "incluir": false,
+    "motivo": "Sin EBITDA ni EBIT; tamaño mínimo"
+   },
+   {
+    "objetivo": "AKG Exim Limited",
+    "comprador": "NA",
+    "pais": "India",
+    "anuncio": "2025-10-09",
+    "ev_ventas": 0.39,
+    "ev_ebitda": 22.9,
+    "ev_ebit": 24.64,
+    "incluir": false,
+    "motivo": "Comercializadora (otro giro); múltiplos atípicos; sin comprador"
+   },
+   {
+    "objetivo": "AKG Exim Limited (2)",
+    "comprador": "NA",
+    "pais": "India",
+    "anuncio": "2025-10-09",
+    "ev_ventas": 0.44,
+    "ev_ebitda": 25.72,
+    "ev_ebit": 27.68,
+    "incluir": false,
+    "motivo": "Segundo registro de la misma operación"
+   },
+   {
+    "objetivo": "Anhui Zhongshang Convenience Store",
+    "comprador": "Nanjing Central Emporium",
+    "pais": "China",
+    "anuncio": "2025-02-25",
+    "ev_ventas": null,
+    "ev_ebitda": null,
+    "ev_ebit": 0.46,
+    "incluir": false,
+    "motivo": "Sin ventas ni EBITDA; EV/EBIT sin sentido económico"
+   },
+   {
+    "objetivo": "Atacadão S.A.",
+    "comprador": "Carrefour SA",
+    "pais": "Brasil",
+    "anuncio": "2025-02-11",
+    "ev_ventas": 0.33,
+    "ev_ebitda": 6.5,
+    "ev_ebit": 8.65,
+    "incluir": true,
+    "motivo": "Autoservicio mayorista"
+   },
+   {
+    "objetivo": "Almacenes Éxito S.A.",
+    "comprador": "Super Selectos El Salvador",
+    "pais": "Colombia",
+    "anuncio": "2023-10-16",
+    "ev_ventas": 0.45,
+    "ev_ebitda": 7.02,
+    "ev_ebit": 12.26,
+    "incluir": true,
+    "motivo": "Cadena de supermercados latinoamericana"
+   }
+  ]
+ },
+ "lseg": {
+  "fuente": "LSEG Workspace, exportación del 6-oct-2026 (EV/EBITDA 0FQ FY0; P/U SmartEstimate FY1; P/VL)",
+  "empresas": [
+   {
+    "empresa": "Soriana",
+    "ric": "SORIANAB.MX",
+    "ev_ebitda": 7.40995459895746,
+    "p_u_fwd": 21.3597144756124,
+    "p_vl": 0.703119342687385
+   },
+   {
+    "empresa": "Chedraui",
+    "ric": "CHDRAUIB.MX",
+    "ev_ebitda": 6.69557641322766,
+    "p_u_fwd": 16.3062764453949,
+    "p_vl": 1.5578386416635
+   },
+   {
+    "empresa": "Walmex",
+    "ric": "WALMEX.MX",
+    "ev_ebitda": 9.90379339333817,
+    "p_u_fwd": 19.1119579120667,
+    "p_vl": 3.3514724835838
+   },
+   {
+    "empresa": "La Comer",
+    "ric": "LACOMERUBC.MX",
+    "ev_ebitda": 7.99919309838904,
+    "p_u_fwd": 15.7469228372378,
+    "p_vl": 1.00644117423374
+   },
+   {
+    "empresa": "Liverpool",
+    "ric": "LIVEPOLC1.MX",
+    "ev_ebitda": 4.72397421538925,
+    "p_u_fwd": 6.98027297885258,
+    "p_vl": 0.763442980344198
+   }
+  ]
+ },
+ "precio_objetivo": {
+  "ponderaciones_default": {
+   "dcf": 0.3333333333333333,
+   "comparables": 0.3333333333333333,
+   "transacciones": 0.3333333333333333
+  },
+  "horizonte": "12 meses"
+ },
+ "contexto_financiero": {
+  "anios": [
+   2021,
+   2022,
+   2023,
+   2024,
+   2025
+  ],
+  "margen_bruto": [
+   0.219,
+   0.222,
+   0.228,
+   0.237,
+   0.241
+  ],
+  "margen_ebitda": [
+   0.079,
+   0.076,
+   0.073,
+   0.071,
+   0.067
+  ],
+  "margen_neto": [
+   0.028,
+   0.03,
+   0.029,
+   0.022,
+   0.019
+  ],
+  "roe": [
+   0.061,
+   0.067,
+   0.064,
+   0.047,
+   0.039
+  ],
+  "roa": [
+   0.03,
+   0.035,
+   0.033,
+   0.025,
+   0.021
+  ],
+  "razon_circulante": [
+   1.25,
+   1.26,
+   1.32,
+   1.24,
+   1.24
+  ],
+  "deuda_con_costo_ebitda": [
+   2.09,
+   1.84,
+   1.8,
+   2.32,
+   1.99
+  ],
+  "flujo_operacion_utilidad": [
+   2.73,
+   1.96,
+   1.32,
+   2.2,
+   4.12
+  ],
+  "gastos_generales_sobre_ventas": {
+   "2021": 0.16,
+   "2025": 0.198
+  },
+  "cagr_ventas_soriana_2021_2025": 0.034,
+  "cagr_antad_2022_2025": 0.082,
+  "macro": {
+   "tasa_banxico": 0.065,
+   "inflacion_sep_2026": 0.0345,
+   "tipo_cambio_aprox": 18.4
+  }
+ },
+ "valores_reporte_para_validar": {
+  "wacc_redondeado": 0.0788,
+  "dcf": {
+   "Base": {
+    "vt": 130782,
+    "ev": 110206,
+    "equity": 100041,
+    "vpa": 55.58
+   },
+   "Pesimista": {
+    "ev": 77401,
+    "equity": 67236,
+    "vpa": 37.35
+   },
+   "Optimista": {
+    "ev": 143376,
+    "equity": 133211,
+    "vpa": 74.01
+   }
+  },
+  "comparables": {
+   "ev_ebitda": 40.78,
+   "ev_ventas": 64.96,
+   "p_u": 24.15,
+   "promedio": 43.3,
+   "media_ev_ebitda": 7.026,
+   "media_ev_ventas": 0.716,
+   "media_p_u": 13.146
+  },
+  "transacciones": {
+   "ev_ebitda": 40.74,
+   "ev_ventas": 31.83,
+   "ev_ebit": 47.09,
+   "promedio": 39.89,
+   "media_ev_ebitda_muestra_completa": 19.505
+  },
+  "precio_objetivo": 46.25,
+  "potencial": 0.397,
+  "ev_ebitda_al_precio": 5.86,
+  "lseg": {
+   "media_pares_ev_ebitda": 7.33,
+   "precio_implicito": 42.79
+  }
+ }
+}

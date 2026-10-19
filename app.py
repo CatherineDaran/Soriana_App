@@ -16,6 +16,7 @@ from plotly.subplots import make_subplots
 
 import interfaz
 import modelo as m
+import relativa
 import reporte_pdf
 
 # Paleta de Soriana, suavizada para lectura cómoda
@@ -32,7 +33,7 @@ GRIS_C = "#D9D5D2"
 GRIS_TEXTO = "#62646B"
 VERDE = "#3E8A3A"      # diferencias positivas
 ROJO = "#B23A33"       # diferencias negativas
-VERSION = "v2.7 · 19-oct-2026"  # se muestra al pie de la barra lateral
+VERSION = "v3.0 · 19-oct-2026"  # se muestra al pie de la barra lateral
 # Integrantes del equipo (se muestran en la barra lateral y en el encabezado del Dashboard)
 EQUIPO = [
     ("Alejandro Ochoa", "A01613152"),
@@ -298,8 +299,19 @@ def validacion_excel():
     return m.validacion(datos(), estadisticas()), m.efecto_redondeo_wacc(datos(), estadisticas())
 
 
+@st.cache_data
+def validacion_banamex():
+    return relativa.validacion_reporte(datos(), estadisticas(), datos_relativa())
+
+
+@st.cache_data
+def datos_relativa():
+    return relativa.cargar_relativa()
+
+
 DATA = datos()
 EST = estadisticas()
+REL = datos_relativa()
 DEF = m.parametros_default(DATA)
 EMP = DATA["empresa"]
 
@@ -494,6 +506,12 @@ with st.sidebar:
     st.session_state.setdefault(PREFIJO + "escenario", "Base")
     escenario = st.radio("Escenario", m.ESCENARIOS, key=PREFIJO + "escenario")
 
+    MODOS_WACC = {"exacto": "Exacto (Excel integrador)", "redondeado": "Redondeado a 7.88% (reporte Banamex)"}
+    st.session_state.setdefault(PREFIJO + "modo_wacc", "exacto")
+    modo_wacc = st.radio("WACC del DCF", list(MODOS_WACC), key=PREFIJO + "modo_wacc",
+                         format_func=MODOS_WACC.get)
+    st.caption("La diferencia de 3 centavos viene solo del redondeo del WACC.")
+
     p = copy.deepcopy(DEF)
     ajuste = m.ajuste_antad(DATA)
 
@@ -590,6 +608,37 @@ with st.sidebar:
 # Cálculo de toda la cadena
 # ---------------------------------------------------------------------------
 
+# El modo de WACC elegido alimenta el DCF y el precio objetivo (un WACC manual siempre tiene prioridad).
+p = relativa.con_wacc(p, EST, modo_wacc)
+
+
+def _inclusion(clave):
+    """Lee las casillas Incluir editadas en la tabla (st.data_editor guarda solo los cambios)."""
+    estado = st.session_state.get(clave) or {}
+    return {int(i): bool(c["Incluir"]) for i, c in estado.get("edited_rows", {}).items() if "Incluir" in c}
+
+
+def _valor_texto(k, valor, dec):
+    """Valor de un campo de texto numérico antes de dibujarlo (misma regla que campo())."""
+    txt = st.session_state.get(k)
+    if txt is None or txt.strip() == _texto(valor, dec):
+        return valor
+    v = _leer(txt)
+    return valor if v is None else v
+
+
+POND_DEFAULT = REL["precio_objetivo"]["ponderaciones_default"]
+for _e in ("est_comp", "est_trans"):
+    st.session_state.setdefault(PREFIJO + _e, "Media")
+POND = {k: _valor_texto(PREFIJO + f"pond_{k}", POND_DEFAULT[k] * 100, 2) / 100 for k in POND_DEFAULT}
+UMBRALES = {"comprar": _valor_texto(PREFIJO + "umbral_comprar", relativa.UMBRALES_DEFAULT["comprar"] * 100, 1) / 100,
+            "vender": _valor_texto(PREFIJO + "umbral_vender", relativa.UMBRALES_DEFAULT["vender"] * 100, 1) / 100}
+VR = relativa.valuacion_completa(
+    p, DATA, EST, REL, incluir_comp=_inclusion(PREFIJO + "editor_comp"),
+    incluir_trans=_inclusion(PREFIJO + "editor_trans"), est_comp=st.session_state[PREFIJO + "est_comp"],
+    est_trans=st.session_state[PREFIJO + "est_trans"], pond=POND, umbrales=UMBRALES)
+PO = VR["precio_objetivo"]
+
 R = m.modelo_completo(p, DATA, EST, escenario)
 CC = R["costo_capital"]
 V = R["valuacion"]
@@ -600,7 +649,7 @@ IPC = ipc()
 
 def pdf_actual() -> bytes:
     """Se ejecuta solo al hacer clic en el botón de descarga, con los valores en pantalla."""
-    return reporte_pdf.generar_pdf(p, DATA, EST, escenario)
+    return reporte_pdf.generar_pdf(p, DATA, EST, escenario, VR)
 
 
 NOMBRE_PDF = f"Valuacion_Soriana_{escenario}.pdf"
@@ -641,11 +690,17 @@ if not V["valido"]:
 if abs(ESC["suma_prob"] - 1) > 1e-9:
     st.info(f"Las probabilidades de los escenarios suman {fp(ESC['suma_prob'], 0)}, no 100%.")
 
-tabs = st.tabs([":material/space_dashboard: Dashboard", ":material/show_chart: Inflación y mercado",
-                ":material/functions: Beta y WACC", ":material/table_chart: Proyección",
-                ":material/stacks: Escenarios", ":material/tune: Sensibilidad",
-                ":material/fact_check: Validación Excel", ":material/picture_as_pdf: Reporte PDF"],
-               key="pestana")
+TOP = st.tabs([":material/space_dashboard: Dashboard", ":material/functions: DCF",
+               ":material/groups: Valuación relativa", ":material/flag: Precio objetivo",
+               ":material/insights: Contexto financiero", ":material/fact_check: Validación",
+               ":material/picture_as_pdf: Reporte PDF"], key="pestana")
+with TOP[1]:
+    SUB_DCF = st.tabs(["Inflación y mercado", "Beta y WACC", "Proyección y valuación", "Escenarios", "Sensibilidad"],
+                      key="pestana_dcf")
+with TOP[2]:
+    SUB_REL = st.tabs(["Empresas comparables", "Transacciones precedentes"], key="pestana_rel")
+# Índices de las secciones originales (se conservan sin cambios)
+tabs = [TOP[0], *SUB_DCF, TOP[5], TOP[6]]
 
 
 # ---------------------------------------------------------------------------
@@ -726,6 +781,45 @@ def fig_heatmap(mat):
     return layout(fig, "Sensibilidad WACC – g (valor por acción)", 380)
 
 
+COLOR_RECOMENDACION = {"COMPRAR": (VERDE, "#EAF4E8"), "MANTENER": (GRIS_TEXTO, "#F3F1EF"),
+                       "VENDER": (ROJO, "#F9E9E7"), "n.d.": (GRIS_TEXTO, "#F3F1EF")}
+
+
+def recomendacion_html(rec, umbrales, dest=None):
+    color, fondo = COLOR_RECOMENDACION.get(rec, COLOR_RECOMENDACION["n.d."])
+    regla = (f"Regla del equipo: comprar si potencial &gt; {fp(umbrales['comprar'], 0)}, "
+             f"vender si &lt; {fp(umbrales['vender'], 0)}")
+    (dest or st).markdown(
+        f"<div class='tarjeta' style='background:{fondo};border-color:{fondo}'><div class='etq'>Recomendación</div>"
+        f"<div class='val' style='color:{color}'>{h(rec)}</div><div class='sub'>{regla}</div></div>",
+        unsafe_allow_html=True)
+
+
+def fig_football():
+    rangos = VR["rangos"]
+    nombres = [k for k, (a, b) in rangos.items() if a is not None and b is not None]
+    colores = [PRIM, PRIM_CL, SEC, SEC_CL, VERDE_M]
+    fig = go.Figure()
+    for i, k in enumerate(nombres):
+        a, b = rangos[k]
+        fig.add_trace(go.Bar(y=[k], x=[b - a], base=[a], orientation="h", marker_color=colores[i % len(colores)],
+                             text=[f"{fd(a)} – {fd(b)}"], textposition="inside", insidetextanchor="middle",
+                             textfont=dict(color="#FFFFFF" if i % 2 == 0 else CARBON), showlegend=False,
+                             hovertemplate=f"{k}<br>{fd(a)} – {fd(b)}<extra></extra>"))
+    fig.add_vline(x=p["precio_mercado"], line=dict(color=CARBON, dash="dash", width=2))
+    fig.add_annotation(x=p["precio_mercado"], y=1.0, yref="paper", yanchor="bottom", xanchor="right", showarrow=False,
+                       text=f"Precio {fd(p['precio_mercado'])}", font=dict(color=CARBON, size=11))
+    if PO["objetivo"] is not None:
+        fig.add_vline(x=PO["objetivo"], line=dict(color=PRIM, width=2.5))
+        fig.add_annotation(x=PO["objetivo"], y=1.0, yref="paper", yanchor="bottom", xanchor="left", showarrow=False,
+                           text=f"Objetivo {fd(PO['objetivo'])}", font=dict(color=PRIM, size=11))
+    fig.update_yaxes(autorange="reversed")
+    fig.update_xaxes(title_text="$ por acción")
+    layout(fig, "Rango de valuación (football field)", 440)
+    fig.update_layout(margin=dict(t=72))
+    return fig
+
+
 def boton_pdf(dest, clave, primario=True):
     dest.download_button(
         "Descargar reporte PDF", data=pdf_actual, file_name=NOMBRE_PDF, mime="application/pdf",
@@ -757,6 +851,23 @@ with tabs[0]:
     tarjeta(c[2], "Enterprise Value", fm(V["enterprise_value"]), "mdp")
     tarjeta(c[3], "Equity Value", fm(V["equity_value"]), "mdp")
     tarjeta(c[4], "Valor ponderado", fd(ESC["ponderado"]), f"Escenario seleccionado: {escenario}")
+
+    seccion("Precio objetivo y valuación relativa",
+            "Precio objetivo = ponderación del DCF base, empresas comparables y transacciones precedentes.")
+    c = st.columns(3)
+    pot = PO["potencial"]
+    tarjeta(c[0], "Precio objetivo (12 meses)", fd(PO["objetivo"]), "Ponderación DCF · comparables · transacciones",
+            destacada=True)
+    tarjeta(c[1], "Potencial", "n.d." if pot is None else f"{'+' if pot >= 0 else ''}{fp(pot, 1)}",
+            f"vs precio de mercado {fd(p['precio_mercado'])}", "" if pot is None else ("pos" if pot >= 0 else "neg"))
+    with c[2]:
+        recomendacion_html(PO["recomendacion"], UMBRALES)
+    c = st.columns(3)
+    tarjeta(c[0], "DCF (escenario base)", fd(VR["dcf"]), f"Peso {fp(POND['dcf'], 1)} · WACC {fp(VR['wacc'])}")
+    tarjeta(c[1], "Empresas comparables", fd(VR["comparables"]["valor"]),
+            f"Peso {fp(POND['comparables'], 1)} · {VR['comparables']['estadistico'].lower()} de 3 múltiplos")
+    tarjeta(c[2], "Transacciones precedentes", fd(VR["transacciones"]["valor"]),
+            f"Peso {fp(POND['transacciones'], 1)} · {VR['transacciones']['n_incluidas']} operaciones")
 
     c1, c2 = st.columns(2)
     grafica(fig_inflacion_activo(), c1)
@@ -1111,6 +1222,271 @@ with tabs[5]:
 
 
 # ---------------------------------------------------------------------------
+# Valuación relativa: tablas y gráficas compartidas
+# ---------------------------------------------------------------------------
+
+def _fx(v, dec=2):
+    return "n.d." if _nd(v) else f"{v:,.{dec}f}x"
+
+
+def tabla_estadisticos_html(est_df):
+    vista = est_df.loc[relativa.ESTADISTICOS].copy()
+    vista = vista.map(lambda v: _fx(v)) if hasattr(vista, "map") else vista
+    vista.loc["Observaciones"] = [str(int(est_df.loc["n", c])) for c in est_df.columns]
+    vista.index.name = "Estadístico"
+    tabla(vista, sutiles=("Observaciones",))
+
+
+def tabla_precios_html(res, multiplos):
+    filas = []
+    for k in multiplos:
+        nombre = relativa.NOMBRE_MULTIPLO[k]
+        mult = res["estadisticos"].loc[res["estadistico"], nombre]
+        metrica, con_puente = relativa.METRICA[k]
+        base = None if mult is None else mult * REL["metricas_soriana_2025"][metrica]
+        aj = relativa.ajuste_neto(REL) if con_puente else 0
+        filas.append({
+            "Múltiplo": nombre, f"{res['estadistico']}": _fx(mult),
+            "Métrica de Soriana 2025": fm(REL["metricas_soriana_2025"][metrica], 0),
+            "Valor implícito": fm(base, 0), "Ajuste a Equity": fm(aj, 0) if con_puente else "no aplica",
+            "Equity": fm(None if base is None else base + aj, 0), "Precio por acción": fd(res["precios"][nombre]),
+        })
+    df = pd.DataFrame(filas).set_index("Múltiplo")
+    df.loc["Promedio de los múltiplos"] = [""] * (len(df.columns) - 1) + [fd(res["valor"])]
+    tabla(df, totales=("Promedio de los múltiplos",))
+
+
+def editor_inclusion(filas, columnas, clave, numericas):
+    """Tabla con casilla Incluir; el resto de las columnas es de solo lectura."""
+    df = pd.DataFrame([{"Incluir": bool(f["incluir"]),
+                        **{et: (_fx(f.get(k)) if et in numericas else f.get(k)) for k, et in columnas}} for f in filas])
+    st.data_editor(df, key=clave, hide_index=True, width="stretch", disabled=[c for c in df.columns if c != "Incluir"],
+                   column_config={"Incluir": st.column_config.CheckboxColumn("Incluir", width="small")})
+
+
+def selector_estadistico(clave, texto):
+    st.radio(texto, relativa.ESTADISTICOS, key=clave, horizontal=True)
+
+
+# ---------------------------------------------------------------------------
+# 9. Empresas comparables
+# ---------------------------------------------------------------------------
+
+with SUB_REL[0]:
+    comp = VR["comparables"]
+    ref = REL["comparables"]["soriana_referencia"]
+    seccion("Empresas comparables", f"Fuente: {REL['comparables']['fuente']}. Marca o desmarca los pares que "
+                                    "entran en los estadísticos.")
+    editor_inclusion(REL["comparables"]["pares"],
+                     [("empresa", "Empresa"), ("ticker", "Ticker"), ("pais", "País"), ("ev_ebitda", "EV/EBITDA"),
+                      ("ev_ventas", "EV/Ventas"), ("p_u", "P/U"), ("justificacion", "Justificación")],
+                     PREFIJO + "editor_comp", ["EV/EBITDA", "EV/Ventas", "P/U"])
+    nota(f"<b>Soriana (referencia):</b> {_fx(ref['ev_ebitda'])} EV/EBITDA, {_fx(ref['ev_ventas'])} EV/Ventas y "
+         f"{_fx(ref['p_u'], 1)} P/U en Capital IQ (con precio anterior); no entra en los estadísticos. "
+         f"<b>Excluidos:</b> {h(REL['comparables']['excluidos'])}.")
+
+    c1, c2 = st.columns([1, 1])
+    filas_c = comp["filas"]
+    nombres = [f["empresa"] for f in filas_c] + ["Soriana (ref.)"]
+    valores = [f["ev_ebitda"] for f in filas_c] + [ref["ev_ebitda"]]
+    colores = [SEC if f["incluir"] else GRIS_C for f in filas_c] + [PRIM]
+    fig = go.Figure(go.Bar(x=nombres, y=valores, marker_color=colores, text=[_fx(v) for v in valores],
+                           textposition="outside", width=0.6, hovertemplate="%{x}: %{y:.2f}x<extra></extra>"))
+    media = comp["estadisticos"].loc["Media", "EV/EBITDA"]
+    if media is not None:
+        fig.add_trace(go.Scatter(x=nombres, y=[media] * len(nombres), mode="lines", name=f"Media de pares {_fx(media)}",
+                                 line=dict(color=CARBON, dash="dash", width=1.5), hoverinfo="skip"))
+    fig.update_layout(showlegend=True)
+    fig.update_yaxes(title_text="EV/EBITDA (veces)")
+    grafica(layout(fig, "EV/EBITDA por par (Soriana resaltada; gris = excluido)", 380), c1)
+    with c2:
+        tabla_estadisticos_html(comp["estadisticos"])
+
+    seccion("Precio implícito por múltiplo",
+            "EV/EBITDA y EV/Ventas: Equity = múltiplo × métrica + ajuste neto (−10,165 mdp). P/U: Equity = P/U × "
+            "utilidad neta de la controladora, sin puente. Precio = Equity / 1,800 millones de acciones.")
+    selector_estadistico(PREFIJO + "est_comp", "Estadístico")
+    tabla_precios_html(comp, relativa.MULTIPLOS_COMPARABLES)
+    c = st.columns(3)
+    dif_c = None if comp["valor"] is None else comp["valor"] / p["precio_mercado"] - 1
+    tarjeta(c[0], "Valor por comparables", fd(comp["valor"]), "Promedio de EV/EBITDA, EV/Ventas y P/U",
+            destacada=True)
+    tarjeta(c[1], "Diferencia vs precio", "n.d." if dif_c is None else f"{'+' if dif_c >= 0 else ''}{fp(dif_c, 1)}",
+            f"Precio de mercado {fd(p['precio_mercado'])}", "" if dif_c is None else ("pos" if dif_c >= 0 else "neg"))
+    tarjeta(c[2], "Pares incluidos", f"{sum(1 for f in filas_c if f['incluir'])} de {len(filas_c)}",
+            "Soriana no entra en los estadísticos")
+    seccion("Lectura")
+    nota("<b>EV/EBITDA es el ancla</b>: no lo distorsionan la deuda ni los arrendamientos, porque compara el valor "
+         "de la operación con su flujo. <b>EV/Ventas sobrevalúa a Soriana</b> porque su margen es menor que el de sus "
+         "pares: cada peso de venta genera menos EBITDA. <b>P/U la subvalúa</b> porque su utilidad neta está "
+         "presionada por los intereses de la deuda y los arrendamientos.")
+
+
+# ---------------------------------------------------------------------------
+# 10. Transacciones precedentes
+# ---------------------------------------------------------------------------
+
+with SUB_REL[1]:
+    tr = VR["transacciones"]
+    seccion("Transacciones precedentes", f"Fuente: {REL['transacciones']['fuente']}.")
+    c = st.columns(3)
+    tarjeta(c[0], "Operaciones", f"{tr['n_total']} → {tr['n_incluidas']} incluidas",
+            "Se depuran otros giros, múltiplos atípicos y datos faltantes")
+    tarjeta(c[1], "Media EV/EBITDA, muestra completa", _fx(tr["media_ev_ebitda_muestra_completa"], 1),
+            "Todas las operaciones con dato")
+    tarjeta(c[2], "Media EV/EBITDA, muestra depurada", _fx(tr["media_ev_ebitda_depurada"]),
+            "Solo las operaciones incluidas", destacada=True)
+    editor_inclusion(REL["transacciones"]["operaciones"],
+                     [("objetivo", "Objetivo"), ("comprador", "Comprador"), ("pais", "País"), ("anuncio", "Anuncio"),
+                      ("ev_ventas", "EV/Ventas"), ("ev_ebitda", "EV/EBITDA"), ("ev_ebit", "EV/EBIT"),
+                      ("motivo", "Motivo")],
+                     PREFIJO + "editor_trans", ["EV/Ventas", "EV/EBITDA", "EV/EBIT"])
+    c1, c2 = st.columns([1, 1])
+    filas_t = tr["filas"]
+    fig = go.Figure()
+    xs = [f["objetivo"] for f in filas_t if f["ev_ebitda"] is not None]
+    ys = [f["ev_ebitda"] for f in filas_t if f["ev_ebitda"] is not None]
+    cs = [SEC if f["incluir"] else GRIS_C for f in filas_t if f["ev_ebitda"] is not None]
+    fig.add_trace(go.Bar(x=xs, y=ys, marker_color=cs, text=[_fx(v, 1) for v in ys], textposition="outside",
+                         width=0.6, hovertemplate="%{x}: %{y:.2f}x<extra></extra>", showlegend=False))
+    fig.add_trace(go.Scatter(x=xs, y=[tr["media_ev_ebitda_muestra_completa"]] * len(xs), mode="lines",
+                             name=f"Media muestra completa {_fx(tr['media_ev_ebitda_muestra_completa'], 1)}",
+                             line=dict(color=GRIS, dash="dot", width=1.6), hoverinfo="skip"))
+    if tr["media_ev_ebitda_depurada"] is not None:
+        fig.add_trace(go.Scatter(x=xs, y=[tr["media_ev_ebitda_depurada"]] * len(xs), mode="lines",
+                                 name=f"Media depurada {_fx(tr['media_ev_ebitda_depurada'])}",
+                                 line=dict(color=PRIM, dash="dash", width=1.6), hoverinfo="skip"))
+    fig.update_yaxes(title_text="EV/EBITDA (veces)")
+    grafica(layout(fig, "EV/EBITDA por operación (gris = excluida)", 380), c1)
+    with c2:
+        tabla_estadisticos_html(tr["estadisticos"])
+    seccion("Precio implícito por múltiplo", "Equity = múltiplo × métrica de Soriana + ajuste neto (−10,165 mdp).")
+    selector_estadistico(PREFIJO + "est_trans", "Estadístico")
+    tabla_precios_html(tr, relativa.MULTIPLOS_TRANSACCIONES)
+    c = st.columns(2)
+    dif_t = None if tr["valor"] is None else tr["valor"] / p["precio_mercado"] - 1
+    tarjeta(c[0], "Valor por transacciones", fd(tr["valor"]), "Promedio de EV/Ventas, EV/EBITDA y EV/EBIT",
+            destacada=True)
+    tarjeta(c[1], "Diferencia vs precio", "n.d." if dif_t is None else f"{'+' if dif_t >= 0 else ''}{fp(dif_t, 1)}",
+            f"Precio de mercado {fd(p['precio_mercado'])}", "" if dif_t is None else ("pos" if dif_t >= 0 else "neg"))
+
+
+# ---------------------------------------------------------------------------
+# 11. Precio objetivo
+# ---------------------------------------------------------------------------
+
+with TOP[3]:
+    seccion("Valor por método", f"DCF con WACC {fp(VR['wacc'], 4)}: {MODOS_WACC[modo_wacc]}.")
+    c = st.columns(3)
+    tarjeta(c[0], "DCF (escenario base)", fd(VR["dcf"]), f"WACC {fp(VR['wacc'])}")
+    tarjeta(c[1], "Empresas comparables", fd(VR["comparables"]["valor"]), VR["comparables"]["estadistico"])
+    tarjeta(c[2], "Transacciones precedentes", fd(VR["transacciones"]["valor"]), VR["transacciones"]["estadistico"])
+
+    c1, c2 = st.columns(2)
+    with c1:
+        seccion("Ponderaciones", "Editables; deben sumar 100%.")
+        cc_ = st.columns(3)
+        for col, (k, nombre) in zip(cc_, [("dcf", "DCF (%)"), ("comparables", "Comparables (%)"),
+                                          ("transacciones", "Transacciones (%)")]):
+            with col:
+                campo(nombre, PREFIJO + f"pond_{k}", POND_DEFAULT[k] * 100, 2)
+        if PO["aviso"]:
+            st.warning(f"Las ponderaciones suman {fp(PO['suma'], 2)}; deben sumar 100%.")
+        else:
+            st.caption(f"Suma: {fp(PO['suma'], 2)}")
+    with c2:
+        seccion("Regla del equipo", "Umbrales de potencial para la recomendación.")
+        cc_ = st.columns(2)
+        with cc_[0]:
+            campo("Comprar si el potencial es mayor a (%)", PREFIJO + "umbral_comprar",
+                  relativa.UMBRALES_DEFAULT["comprar"] * 100, 1)
+        with cc_[1]:
+            campo("Vender si el potencial es menor a (%)", PREFIJO + "umbral_vender",
+                  relativa.UMBRALES_DEFAULT["vender"] * 100, 1)
+        st.caption("Entre ambos umbrales: MANTENER.")
+
+    c = st.columns(3)
+    pot = PO["potencial"]
+    tarjeta(c[0], "Precio objetivo (12 meses)", fd(PO["objetivo"]),
+            " + ".join(f"{fp(POND[k], 1)} {n}" for k, n in
+                       [("dcf", "DCF"), ("comparables", "comp."), ("transacciones", "trans.")]), destacada=True)
+    tarjeta(c[1], "Potencial", "n.d." if pot is None else f"{'+' if pot >= 0 else ''}{fp(pot, 1)}",
+            f"Precio de mercado {fd(p['precio_mercado'])}", "" if pot is None else ("pos" if pot >= 0 else "neg"))
+    with c[2]:
+        recomendacion_html(PO["recomendacion"], UMBRALES)
+    grafica(fig_football())
+    nota(f"Al precio de mercado de {fd(p['precio_mercado'])}, Soriana cotiza a <b>{_fx(VR['ev_ebitda_al_precio'])} "
+         f"EV/EBITDA</b>, por debajo de la media de sus comparables ({_fx(VR['comparables']['estadisticos'].loc['Media', 'EV/EBITDA'])}).")
+
+    seccion("Contraste con LSEG", REL["lseg"]["fuente"])
+    lseg = VR["lseg"]
+    c1, c2 = st.columns([3, 2])
+    with c1:
+        df = pd.DataFrame([{"Empresa": e["empresa"], "RIC": e["ric"], "EV/EBITDA": _fx(e["ev_ebitda"]),
+                            "P/U adelantado": _fx(e["p_u_fwd"], 1), "P/VL": _fx(e["p_vl"])} for e in lseg["empresas"]])
+        sor = df.index[df["Empresa"] == "Soriana"][0]
+        tabla(df, indice=False, izq=("Empresa", "RIC"),
+              estilos={(sor, j): f"font-weight:700;color:{PRIM}" for j in range(5)})
+    with c2:
+        tarjeta(st, "Media de pares EV/EBITDA (sin Soriana)", _fx(lseg["media_pares_ev_ebitda"]),
+                f"Precio implícito {fd(lseg['precio_implicito'])}", destacada=True)
+        nota(f"Soriana cotiza a <b>{_fx(lseg['soriana']['p_vl'])}</b> su valor en libros, la más barata del grupo.")
+
+
+# ---------------------------------------------------------------------------
+# 12. Contexto financiero
+# ---------------------------------------------------------------------------
+
+with TOP[4]:
+    cf = REL["contexto_financiero"]
+    anios = [str(a) for a in cf["anios"]]
+    seccion("Márgenes 2021–2025", "El margen bruto sube, pero el margen EBITDA cae: los gastos crecen más que la venta.")
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=anios, y=[v * 100 for v in cf["margen_bruto"]], name="Margen bruto",
+                             mode="lines+markers+text", text=[fp(v, 1) for v in cf["margen_bruto"]],
+                             textposition="top center", line=dict(color=VERDE_M, width=2.6)))
+    fig.add_trace(go.Scatter(x=anios, y=[v * 100 for v in cf["margen_ebitda"]], name="Margen EBITDA",
+                             mode="lines+markers+text", text=[fp(v, 1) for v in cf["margen_ebitda"]],
+                             textposition="top center", line=dict(color=PRIM, width=2.6)))
+    fig.update_yaxes(title_text="% de las ventas", rangemode="tozero")
+    grafica(layout(fig, "Margen bruto vs margen EBITDA", 380))
+
+    seccion("Razones financieras")
+    razones = pd.DataFrame({
+        "ROE": [fp(v, 1) for v in cf["roe"]], "ROA": [fp(v, 1) for v in cf["roa"]],
+        "Razón circulante": [f"{v:.2f}x" for v in cf["razon_circulante"]],
+        "Deuda con costo / EBITDA": [f"{v:.2f}x" for v in cf["deuda_con_costo_ebitda"]],
+        "Flujo de operación / utilidad": [f"{v:.2f}x" for v in cf["flujo_operacion_utilidad"]],
+        "Margen neto": [fp(v, 1) for v in cf["margen_neto"]],
+    }, index=anios).T
+    razones.index.name = "Razón"
+    tabla(razones)
+
+    seccion("Datos clave y su efecto en los supuestos")
+    gg = cf["gastos_generales_sobre_ventas"]
+    ke = CC["ke"]
+    c = st.columns(4)
+    datos_clave = [
+        ("Crecimiento", f"{fp(cf['cagr_ventas_soriana_2021_2025'], 1)} vs {fp(cf['cagr_antad_2022_2025'], 1)}",
+         "CAGR de ventas de Soriana contra el sector (ANTAD).",
+         "Las ventas se proyectan con la g del sector decreciente y el escenario conservador resta 3 pp."),
+        ("Gastos generales", f"{fp(gg['2021'], 1)} → {fp(gg['2025'], 1)}", "Gastos generales sobre ventas, 2021 a 2025.",
+         "Presionan el margen EBIT; por eso se usa un margen base de 4.25% y el conservador resta 0.5 pp."),
+        ("Flujo de operación", f"{cf['flujo_operacion_utilidad'][-1]:.1f}x", "Flujo de operación sobre utilidad neta, 2025.",
+         "La caja es mucho mayor que la utilidad: valuar por flujos (FCFF) captura mejor el valor que P/U."),
+        ("ROE vs Ke", f"{fp(cf['roe'][-1], 1)} vs {fp(ke, 2)}", "Rentabilidad sobre capital contra costo de capital.",
+         "El ROE está debajo del Ke: explica el P/VL bajo y castiga el WACC en el escenario conservador."),
+    ]
+    for col, (t, v, s_, efecto) in zip(c, datos_clave):
+        with col:
+            tarjeta(st, t, v, s_)
+            st.caption(f"**Efecto:** {efecto}")
+    mac = cf["macro"]
+    nota(f"<b>Contexto macro:</b> tasa de Banxico {fp(mac['tasa_banxico'], 2)}, inflación de sep-2026 "
+         f"{fp(mac['inflacion_sep_2026'], 2)} y tipo de cambio de {mac['tipo_cambio_aprox']:.1f} pesos por dólar.")
+
+
+# ---------------------------------------------------------------------------
 # 7. Validación contra Excel
 # ---------------------------------------------------------------------------
 
@@ -1123,7 +1499,7 @@ with tabs[6]:
     tarjeta(c[1], "Diferencia máxima", f"{val['Diferencia %'].abs().max() * 100:.2e}%", "en valor absoluto")
     tarjeta(c[2], "Valores comparados", "Defaults del Excel", "Sin importar lo que se mueva en la barra lateral")
 
-    seccion("Validación contra Excel", "Celdas: '7 Valuación'!B11, B12, B16, B18, B24, B26 y '9 Escenarios'!B12:D12.")
+    seccion("Validación contra el Excel integrador", "Celdas: '7 Valuación'!B11, B12, B16, B18, B24, B26 y '9 Escenarios'!B12:D12.")
 
     def _f(k, v):
         return fp(v, 4) if k in ("WACC", "g") else (fd(v, 4) if "acción" in k else fm(v, 2))
@@ -1148,6 +1524,29 @@ with tabs[6]:
     )
 
 
+with TOP[5]:
+    vb = validacion_banamex()
+    nb = int((vb["Estado"] == "PASS").sum())
+    seccion("Validación contra el reporte Banamex",
+            "Siempre con el WACC redondeado a 7.88% y los valores por defecto, sin importar lo que haya en pantalla. "
+            "Tolerancia de redondeo: ±0.01 en pesos por acción y ±1 mdp en montos.")
+
+    def _fu(v, u):
+        return {"mdp": fm(v, 1), "$": fd(v, 2), "%": fp(v, 1), "x": _fx(v)}[u]
+
+    vista = pd.DataFrame({
+        "Concepto": vb["Concepto"].values,
+        "Reporte": [_fu(v, u) for v, u in zip(vb["Reporte"], vb["Unidad"])],
+        "App": [_fu(v, u) for v, u in zip(vb["App"], vb["Unidad"])],
+        "Diferencia": [f"{d:+.4f}" if u != "%" else f"{d * 100:+.3f} pp" for d, u in zip(vb["Diferencia"], vb["Unidad"])],
+        "Tolerancia": [{"mdp": "±1 mdp", "$": "±$0.01", "%": "±0.1 pp", "x": "±0.01x"}[u] for u in vb["Unidad"]],
+        "Estado": [f"<span class='badge {'ok' if e == 'PASS' else 'mal'}'>{e}</span>" for e in vb["Estado"]],
+    })
+    tarjeta(st, "Reporte Banamex", f"{nb} de {len(vb)} en PASS", "WACC redondeado a 7.88% · valores por defecto",
+            destacada=True)
+    tabla(vista, indice=False, izq=("Concepto",))
+
+
 # ---------------------------------------------------------------------------
 # 8. Reporte PDF
 # ---------------------------------------------------------------------------
@@ -1159,7 +1558,8 @@ with tabs[7]:
         contenido = ["Nombre del estudiante", "Empresa analizada", "Variables utilizadas", "Modelo financiero", "Beta",
                      "WACC", "Crecimiento perpetuo", "Valor terminal", "Enterprise Value", "Equity Value",
                      "Valor por acción", "Escenario conservador", "Escenario base", "Escenario optimista",
-                     "Gráficas", "Validación", "Conclusiones"]
+                     "Valuación relativa", "Precio objetivo y recomendación", "Rango de valuación (football field)",
+                     "Contraste con LSEG", "Gráficas", "Validación", "Conclusiones"]
         mitad = (len(contenido) + 1) // 2
         a, b = st.columns(2)
         a.markdown("\n".join(f"{i}. {t}" for i, t in enumerate(contenido[:mitad], 1)))

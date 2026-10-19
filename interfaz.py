@@ -61,11 +61,12 @@ PASOS_TUTORIAL = [
      "<b>Beta → WACC → Flujos → Valor terminal → EV → Equity → Valor por acción</b>. "
      "Con <i>Usar valor manual</i> reemplazas un valor calculado."),
     ("Explora las pestañas",
-     "<b>Dashboard</b> resume los resultados. <b>Inflación y mercado</b> y <b>Beta y WACC</b> muestran las "
-     "regresiones y el costo de capital. <b>Proyección</b> tiene el FCFF 2026–2030, <b>Escenarios</b> los "
-     "compara y <b>Sensibilidad</b> muestra la matriz WACC–g y el tornado."),
+     "<b>Dashboard</b> resume el valor por acción y el precio objetivo. <b>DCF</b> agrupa inflación y mercado, beta "
+     "y WACC, proyección, escenarios y sensibilidad. <b>Valuación relativa</b> tiene empresas comparables y "
+     "transacciones precedentes; <b>Precio objetivo</b> combina los tres métodos con el football field y LSEG, y "
+     "<b>Contexto financiero</b> resume las razones 2021–2025."),
     ("Valida y descarga",
-     "<b>Validación contra Excel</b> compara la app con el modelo original. <b>Descargar reporte PDF</b> genera "
+     "<b>Validación</b> compara la app con el Excel integrador y con el reporte Banamex. <b>Descargar reporte PDF</b> genera "
      "el reporte con los valores en pantalla. Puedes volver a ver esta guía con <b>Ver tutorial</b> en la barra "
      "lateral o con el ícono <b>?</b> cuando está cerrada."),
 ]
