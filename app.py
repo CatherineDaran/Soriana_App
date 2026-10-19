@@ -32,7 +32,14 @@ GRIS_C = "#D9D5D2"
 GRIS_TEXTO = "#62646B"
 VERDE = "#3E8A3A"      # diferencias positivas
 ROJO = "#B23A33"       # diferencias negativas
-VERSION = "v2.4 · 15-oct-2026"  # se muestra al pie de la barra lateral
+VERSION = "v2.6 · 19-oct-2026"  # se muestra al pie de la barra lateral
+# Integrantes del equipo (se muestran en la barra lateral y en el encabezado del Dashboard)
+EQUIPO = [
+    ("Alejandro Ochoa", "A01613152"),
+    ("Catherine Daran", "A01611885"),
+    ("Dheneb Velazquez", "A01614817"),
+    ("Julio Gaspar", "A01613250"),
+]
 FUENTE = "Inter, 'Helvetica Neue', Arial, sans-serif"
 
 st.set_page_config(page_title="Valuación SORIANA B", layout="wide", initial_sidebar_state="expanded")
@@ -55,6 +62,9 @@ st.markdown(
     .hero .titulo {{ color: {CARBON}; font-size: 1.6rem; font-weight: 700; line-height: 1.25; }}
     .hero .titulo span {{ color: {PRIM}; }}
     .hero .sub {{ color: {GRIS_TEXTO}; font-size: .9rem; margin-top: 4px; }}
+    .hero .equipo {{ display: grid; grid-template-columns: repeat(2, max-content); gap: 3px 28px; margin-top: 8px;
+                      font-size: .84rem; color: {GRIS_TEXTO}; }}
+    .hero .equipo b {{ color: {CARBON}; font-weight: 600; }}
     .hero .chips {{ display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }}
     .hero .chip {{ background: #F6F4F3; border: 1px solid #E7E2DF; border-radius: 999px; padding: 3px 11px;
                    font-size: .78rem; color: {CARBON}; }}
@@ -129,6 +139,11 @@ st.markdown(
     .lateral-titulo {{ background: #FFFFFF; border: 1px solid #ECE8E6; border-top: 4px solid {PRIM};
                        border-radius: 10px; padding: 12px 16px; margin-bottom: 12px; }}
     .lateral-titulo .t {{ font-size: 1.05rem; font-weight: 700; color: {CARBON}; }}
+    .lateral-titulo .eq-t {{ margin-top: 10px; padding-top: 8px; border-top: 1px solid #F0ECEA; font-size: .68rem;
+                             font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: {GRIS_TEXTO}; }}
+    .lateral-titulo .eq div {{ display: flex; justify-content: space-between; gap: 8px; font-size: .8rem;
+                               padding: 2px 0; color: {CARBON}; }}
+    .lateral-titulo .eq div span:last-child {{ color: {GRIS_TEXTO}; font-variant-numeric: tabular-nums; }}
     .lateral-titulo .s {{ font-size: .78rem; color: {GRIS_TEXTO}; margin-top: 2px; }}
     .manual-etq {{ font-size: .86rem; font-weight: 600; color: {CARBON}; margin-top: 6px; }}
     .manual-etq code {{ font-size: .78rem; color: {PRIM}; background: {PRIM_FONDO}; }}
@@ -476,7 +491,10 @@ def manual(label, clave, calculado, pct=True, fmt="%.4f", paso=None, mostrar_dec
 with st.sidebar:
     st.markdown(f"<div class='lateral-logo'><img src='{LOGO}' alt='Soriana'></div>", unsafe_allow_html=True)
     st.markdown(f"<div class='lateral-titulo'><div class='t'>Variables del modelo</div>"
-                f"<div class='s'>{h(EMP['emisora'])} · valuación por FCFF</div></div>", unsafe_allow_html=True)
+                f"<div class='s'>{h(EMP['emisora'])} · valuación por FCFF</div>"
+                "<div class='eq-t'>Equipo</div><div class='eq'>"
+                + "".join(f"<div><span>{h(n)}</span><span>{h(mt)}</span></div>" for n, mt in EQUIPO)
+                + "</div></div>", unsafe_allow_html=True)
 
     st.session_state.setdefault(PREFIJO + "escenario", "Base")
     escenario = st.radio("Escenario", m.ESCENARIOS, key=PREFIJO + "escenario")
@@ -604,8 +622,8 @@ hero = "".join([
     "<div class='hero'><div class='franja'></div><div class='cuerpo'>",
     "<div>",
     f"<div class='titulo'>Valuación de <span>{h(EMP['nombre'])}</span></div>",
-    f"<div class='sub'>{h(EMP['curso'])} · Tecnológico de Monterrey · {h(EMP['estudiante'])} "
-    f"({h(EMP['matricula'])})</div>",
+    f"<div class='sub'>{h(EMP['curso'])} · Tecnológico de Monterrey</div>",
+    "<div class='equipo'>" + "".join(f"<span><b>{h(n)}</b> {h(mt)}</span>" for n, mt in EQUIPO) + "</div>",
     "<div class='chips'>",
     f"<span class='chip'>{h(EMP['emisora'])} · BMV</span>",
     f"<span class='chip esc'>Escenario {h(escenario)}</span>",
@@ -721,7 +739,7 @@ def boton_pdf(dest, clave, primario=True):
 
 boton_pdf(st.sidebar, "pdf_lateral", primario=False)
 st.sidebar.html(interfaz.boton_tutorial(), unsafe_allow_javascript=True)
-st.sidebar.caption(f"{EMP['estudiante']} · {VERSION}")
+st.sidebar.caption(VERSION)
 
 
 # ---------------------------------------------------------------------------
