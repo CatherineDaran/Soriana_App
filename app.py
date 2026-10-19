@@ -53,14 +53,7 @@ GRIS_C = "#D9D5D2"
 GRIS_TEXTO = "#62646B"
 VERDE = "#3E8A3A"      # diferencias positivas
 ROJO = "#B23A33"       # diferencias negativas
-VERSION = "v3.2 · 19-oct-2026"  # se muestra al pie de la barra lateral
-# Integrantes del equipo (se muestran en la barra lateral y en el encabezado del Dashboard)
-EQUIPO = [
-    ("Alejandro Ochoa", "A01613152"),
-    ("Catherine Daran", "A01611885"),
-    ("Dheneb Velazquez", "A01614817"),
-    ("Julio Gaspar", "A01613250"),
-]
+VERSION = "v3.3 · 19-oct-2026"  # se muestra al pie de la barra lateral
 FUENTE = "Inter, 'Helvetica Neue', Arial, sans-serif"
 
 st.set_page_config(page_title="Valuación SORIANA B", layout="wide", initial_sidebar_state="expanded")
@@ -534,10 +527,8 @@ with st.sidebar:
     RM = resumen_modos()
     MODOS_WACC = {"redondeado": f"Redondeado a {fp(RM['redondeado']['wacc'])} (reporte Banamex)",
                   "exacto": f"Exacto ({fp(RM['exacto']['wacc'], 4)}, Excel integrador)"}
-    st.session_state.setdefault(PREFIJO + "modo_wacc", DEF["modo_wacc"])
-    modo_wacc = st.radio("WACC del DCF", list(MODOS_WACC), key=PREFIJO + "modo_wacc",
-                         format_func=MODOS_WACC.get)
-    st.caption(f"La diferencia de {fd(abs(RM['diferencia']))} por acción viene solo del redondeo del WACC.")
+    # El WACC se usa siempre redondeado a 7.88%, como en el reporte y la presentación Banamex.
+    modo_wacc = "redondeado"
 
     p = copy.deepcopy(DEF)
     ajuste = m.ajuste_antad(DATA)
@@ -694,7 +685,7 @@ hero = "".join([
     "<div>",
     f"<div class='titulo'>Valuación de <span>{h(EMP['nombre'])}</span></div>",
     f"<div class='sub'>{h(EMP['curso'])} · Tecnológico de Monterrey</div>",
-    "<div class='equipo'>" + "".join(f"<span><b>{h(n)}</b> {h(mt)}</span>" for n, mt in EQUIPO) + "</div>",
+    "<div class='equipo'>" + "".join(f"<span><b>{h(n)}</b> {h(mt)}</span>" for n, mt in m.EQUIPO) + "</div>",
     "<div class='chips'>",
     f"<span class='chip'>{h(EMP['emisora'])} · BMV</span>",
     f"<span class='chip esc'>Escenario {h(escenario)}</span>",
@@ -1588,7 +1579,7 @@ with tabs[7]:
     c1, c2 = st.columns([3, 2])
     with c1:
         seccion("Reporte PDF", f"Refleja los valores que están en pantalla en este momento (escenario {escenario}).")
-        contenido = ["Nombre del estudiante", "Empresa analizada", "Variables utilizadas", "Modelo financiero", "Beta",
+        contenido = ["Integrantes del equipo", "Empresa analizada", "Variables utilizadas", "Modelo financiero", "Beta",
                      "WACC", "Crecimiento perpetuo", "Valor terminal", "Enterprise Value", "Equity Value",
                      "Valor por acción", "Escenario conservador", "Escenario base", "Escenario optimista",
                      "Valuación relativa", "Precio objetivo y recomendación", "Rango de valuación (football field)",

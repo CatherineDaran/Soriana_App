@@ -22,6 +22,14 @@ RUTA_DATOS = Path(__file__).parent / "datos_modelo_soriana.json"
 RUTA_EXCEL = Path(__file__).parent / "Estudio_Financiero_Soriana.xlsx"
 
 ANIOS_PROYECCION = [2026, 2027, 2028, 2029, 2030]
+
+# Integrantes del equipo (encabezado del Dashboard y reporte PDF)
+EQUIPO = [
+    ("Alejandro Ochoa", "A01613152"),
+    ("Catherine Daran", "A01611885"),
+    ("Dheneb Velazquez", "A01614817"),
+    ("Julio Gaspar", "A01613250"),
+]
 ESCENARIOS = ["Conservador", "Base", "Optimista"]
 META_BANXICO = 0.03
 DIAS_HABILES = 252

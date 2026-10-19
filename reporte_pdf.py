@@ -265,7 +265,7 @@ def generar_pdf(p: dict, data: dict, est: dict, escenario: str = "Base", vr: dic
     doc = SimpleDocTemplate(buf, pagesize=letter, leftMargin=1.8 * cm, rightMargin=1.8 * cm,
                             topMargin=1.5 * cm, bottomMargin=1.5 * cm,
                             title="Valuación de Organización Soriana (SORIANA B)",
-                            author=emp["estudiante"])
+                            author=", ".join(n for n, _ in m.EQUIPO))
     el = []
 
     def seccion(n, titulo):
@@ -278,8 +278,8 @@ def generar_pdf(p: dict, data: dict, est: dict, escenario: str = "Base", vr: dic
     el.append(Spacer(1, 6))
 
     # 1. Estudiante
-    seccion(1, "Nombre del estudiante")
-    el.append(Paragraph(f"{emp['estudiante']} (matrícula {emp['matricula']})", txt))
+    seccion(1, "Integrantes del equipo")
+    el.append(_tabla([["Nombre", "Matrícula"]] + [[n, mt] for n, mt in m.EQUIPO], [7 * cm, 4 * cm]))
 
     # 2. Empresa
     seccion(2, "Empresa analizada")
@@ -585,7 +585,7 @@ def generar_pdf(p: dict, data: dict, est: dict, escenario: str = "Base", vr: dic
             f"{fp(po['potencial'], 1)} sobre el precio de mercado, por lo que la recomendación es "
             f"<b>{po['recomendacion']}</b>.", txt))
     el.append(Spacer(1, 10))
-    el.append(Paragraph(f"{emp['estudiante']} · {emp['matricula']}", centro))
+    el.append(Paragraph(" · ".join(f"{n} {mt}" for n, mt in m.EQUIPO), centro))
 
     doc.build(el)
     return buf.getvalue()

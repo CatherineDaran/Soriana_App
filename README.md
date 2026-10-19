@@ -66,6 +66,6 @@ escenarios $37.3382 y $73.9676, valor ponderado $55.6026 y la matriz de sensibil
 6. **Validación**: contra el Excel integrador y contra el reporte Banamex (WACC redondeado a 7.88%).
 7. **Reporte PDF**: genera y descarga el reporte con los valores en pantalla (21 secciones).
 
-En la barra lateral, **WACC del DCF** elige el modo. Por defecto es el WACC redondeado a 7.88% del reporte y la
-presentación Banamex ($55.58 por acción); la opción "Exacto" usa el WACC de 7.8819% del Excel integrador ($55.55).
-Un WACC manual siempre tiene prioridad. La validación contra el Excel se calcula siempre en modo exacto.
+El DCF usa siempre el WACC redondeado a 7.88% del reporte y la presentación Banamex ($55.58 por acción). Un WACC
+manual (en Financieras) tiene prioridad. La validación contra el Excel integrador se calcula siempre con el WACC
+exacto de 7.8819% ($55.55).
