@@ -32,7 +32,7 @@ GRIS_C = "#D9D5D2"
 GRIS_TEXTO = "#62646B"
 VERDE = "#3E8A3A"      # diferencias positivas
 ROJO = "#B23A33"       # diferencias negativas
-VERSION = "v2.5 · 19-oct-2026"  # se muestra al pie de la barra lateral
+VERSION = "v2.4 · 15-oct-2026"  # se muestra al pie de la barra lateral
 FUENTE = "Inter, 'Helvetica Neue', Arial, sans-serif"
 
 st.set_page_config(page_title="Valuación SORIANA B", layout="wide", initial_sidebar_state="expanded")
@@ -55,10 +55,6 @@ st.markdown(
     .hero .titulo {{ color: {CARBON}; font-size: 1.6rem; font-weight: 700; line-height: 1.25; }}
     .hero .titulo span {{ color: {PRIM}; }}
     .hero .sub {{ color: {GRIS_TEXTO}; font-size: .9rem; margin-top: 4px; }}
-    .hero .equipo {{ display: grid; grid-template-columns: repeat(2, max-content); gap: 3px 28px; margin-top: 8px;
-                      font-size: .84rem;
-                      color: {GRIS_TEXTO}; }}
-    .hero .equipo b {{ color: {CARBON}; font-weight: 600; }}
     .hero .chips {{ display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }}
     .hero .chip {{ background: #F6F4F3; border: 1px solid #E7E2DF; border-radius: 999px; padding: 3px 11px;
                    font-size: .78rem; color: {CARBON}; }}
@@ -608,9 +604,8 @@ hero = "".join([
     "<div class='hero'><div class='franja'></div><div class='cuerpo'>",
     "<div>",
     f"<div class='titulo'>Valuación de <span>{h(EMP['nombre'])}</span></div>",
-    f"<div class='sub'>{h(EMP['curso'])} · Tecnológico de Monterrey</div>",
-    "<div class='equipo'>" + "".join(
-        f"<span><b>{h(i['nombre'])}</b> {h(i['matricula'])}</span>" for i in EMP["equipo"]) + "</div>",
+    f"<div class='sub'>{h(EMP['curso'])} · Tecnológico de Monterrey · {h(EMP['estudiante'])} "
+    f"({h(EMP['matricula'])})</div>",
     "<div class='chips'>",
     f"<span class='chip'>{h(EMP['emisora'])} · BMV</span>",
     f"<span class='chip esc'>Escenario {h(escenario)}</span>",
@@ -726,7 +721,7 @@ def boton_pdf(dest, clave, primario=True):
 
 boton_pdf(st.sidebar, "pdf_lateral", primario=False)
 st.sidebar.html(interfaz.boton_tutorial(), unsafe_allow_javascript=True)
-st.sidebar.caption(VERSION)
+st.sidebar.caption(f"{EMP['estudiante']} · {VERSION}")
 
 
 # ---------------------------------------------------------------------------
@@ -1148,7 +1143,7 @@ with tabs[7]:
     c1, c2 = st.columns([3, 2])
     with c1:
         seccion("Reporte PDF", f"Refleja los valores que están en pantalla en este momento (escenario {escenario}).")
-        contenido = ["Integrantes del equipo", "Empresa analizada", "Variables utilizadas", "Modelo financiero", "Beta",
+        contenido = ["Nombre del estudiante", "Empresa analizada", "Variables utilizadas", "Modelo financiero", "Beta",
                      "WACC", "Crecimiento perpetuo", "Valor terminal", "Enterprise Value", "Equity Value",
                      "Valor por acción", "Escenario conservador", "Escenario base", "Escenario optimista",
                      "Gráficas", "Validación", "Conclusiones"]

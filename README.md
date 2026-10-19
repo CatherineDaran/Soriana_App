@@ -2,7 +2,7 @@
 
 Aplicación interactiva en Python y Streamlit que reproduce el modelo de valuación por flujos descontados
 (FCFF) de `Estudio_Financiero_Soriana.xlsx`. Es para la materia Valuación de Empresas del Tec de Monterrey.
-Equipo: Alejandro Ochoa (A01613152), Catherine Daran (A01611885), Dheneb Velazquez (A01614817) y Julio Gaspar (A01613250).
+Autora: Catherine Daran Argueta (A01611885).
 
 Cualquier cambio en una variable recalcula toda la cadena:
 

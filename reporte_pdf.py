@@ -240,7 +240,7 @@ def generar_pdf(p: dict, data: dict, est: dict, escenario: str = "Base") -> byte
     doc = SimpleDocTemplate(buf, pagesize=letter, leftMargin=1.8 * cm, rightMargin=1.8 * cm,
                             topMargin=1.5 * cm, bottomMargin=1.5 * cm,
                             title="Valuación de Organización Soriana (SORIANA B)",
-                            author=", ".join(i["nombre"] for i in emp["equipo"]))
+                            author=emp["estudiante"])
     el = []
 
     def seccion(n, titulo):
@@ -253,9 +253,8 @@ def generar_pdf(p: dict, data: dict, est: dict, escenario: str = "Base") -> byte
     el.append(Spacer(1, 6))
 
     # 1. Estudiante
-    seccion(1, "Integrantes del equipo")
-    filas = [["Nombre", "Matrícula"]] + [[i["nombre"], i["matricula"]] for i in emp["equipo"]]
-    el.append(_tabla(filas, [7 * cm, 4 * cm]))
+    seccion(1, "Nombre del estudiante")
+    el.append(Paragraph(f"{emp['estudiante']} (matrícula {emp['matricula']})", txt))
 
     # 2. Empresa
     seccion(2, "Empresa analizada")
@@ -460,7 +459,7 @@ def generar_pdf(p: dict, data: dict, est: dict, escenario: str = "Base") -> byte
         concl = "Con los supuestos actuales el WACC no supera a g, por lo que el modelo no es válido."
     el.append(Paragraph(concl, txt))
     el.append(Spacer(1, 10))
-    el.append(Paragraph(" · ".join(f"{i['nombre']} {i['matricula']}" for i in emp["equipo"]), centro))
+    el.append(Paragraph(f"{emp['estudiante']} · {emp['matricula']}", centro))
 
     doc.build(el)
     return buf.getvalue()
