@@ -1,4 +1,4 @@
-"""Pruebas: con los valores default, la app reproduce el Excel con tolerancia de 0.01%."""
+"""Pruebas en modo exacto (WACC 7.8819%): la app reproduce el Excel integrador con tolerancia de 0.01%."""
 
 import pytest
 
@@ -12,6 +12,8 @@ def ctx():
     data = m.cargar_datos()
     est = m.estadisticas_beta(data)
     p = m.parametros_default(data)
+    # Estas pruebas reproducen el Excel integrador: corren explícitamente con el WACC exacto (7.8819%).
+    p["modo_wacc"] = "exacto"
     esc = m.todos_escenarios(p, data, est)
     return data, est, p, esc
 

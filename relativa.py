@@ -129,12 +129,12 @@ def transacciones(rel: dict, incluir: dict | None = None, estadistico: str = "Me
 # DCF (WACC exacto o redondeado) y precio objetivo
 # ---------------------------------------------------------------------------
 
-def con_wacc(p: dict, est: dict, modo: str = "exacto") -> dict:
-    """Parámetros con el WACC elegido. 'redondeado' = WACC calculado redondeado a 7.88%.
-    Un WACC manual del usuario siempre tiene prioridad."""
+def con_wacc(p: dict, est: dict, modo: str | None = None) -> dict:
+    """Parámetros con el modo de WACC elegido ('redondeado' a 7.88% o 'exacto' de 7.8819%).
+    Sin modo se conserva el de los parámetros. Un WACC manual del usuario siempre tiene prioridad."""
     q = copy.deepcopy(p)
-    if modo == "redondeado" and q.get("wacc_manual") is None:
-        q["wacc_manual"] = round(m.costo_capital(q, est)["wacc"]["calculado"], 4)
+    if modo is not None:
+        q["modo_wacc"] = modo
     return q
 
 
@@ -180,7 +180,7 @@ def contraste_lseg(rel: dict) -> dict:
             "precio_implicito": precio_implicito("ev_ebitda", media, rel), "mas_barata_p_vl": mas_barata}
 
 
-def valuacion_completa(p: dict, data: dict, est: dict, rel: dict, modo_wacc: str = "exacto",
+def valuacion_completa(p: dict, data: dict, est: dict, rel: dict, modo_wacc: str | None = None,
                        incluir_comp: dict | None = None, incluir_trans: dict | None = None,
                        est_comp: str = "Media", est_trans: str = "Media", pond: dict | None = None,
                        umbrales: dict | None = None) -> dict:

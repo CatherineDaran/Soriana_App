@@ -370,7 +370,9 @@ def generar_pdf(p: dict, data: dict, est: dict, escenario: str = "Base", vr: dic
              ["ISR", fp(cc["isr"])],
              ["D / (D + E)", fp(cc["wd"])],
              ["E / (D + E)", fp(cc["we"])],
-             ["WACC (valor en libros)", fp(cc["wacc"]["usado"], 4)],
+             ["WACC calculado (exacto)", fp(cc["wacc"]["calculado"], 4)],
+             ["Modo del WACC", "redondeado a 4 decimales" if cc["wacc"]["modo"] == "redondeado" else "exacto"],
+             ["WACC base usado" + (" (manual)" if cc["wacc"]["manual"] is not None else ""), fp(cc["wacc"]["usado"], 4)],
              ["Ajuste del escenario", fp(aj["d_wacc"])],
              ["WACC usado en la valuación", fp(v["wacc"], 4)],
              ["Referencia: WACC con capital a mercado", fp(cc["wacc_mercado"], 4)]]
@@ -526,7 +528,10 @@ def generar_pdf(p: dict, data: dict, est: dict, escenario: str = "Base", vr: dic
         f"Correlación de rendimientos mensuales SORIANA–IPC {ipc['regresion']['correlacion']:.4f}.", txt))
 
     # 20. Validación
-    seccion(20, "Validación contra Excel")
+    seccion(20, "Validación")
+    el.append(Paragraph("<b>Nota.</b> " + m.nota_modos(m.resumen_modos(data, est), fp, fd), txt))
+    el.append(Spacer(1, 4))
+    el.append(Paragraph("<b>Validación contra el Excel integrador</b>", txt))
     filas = [["Variable", "Excel", "App", "Diferencia", "Dif. %", "Estado"]]
     for _, f in val.iterrows():
         es_tasa = f["Variable"] in ("WACC", "g")
@@ -539,13 +544,12 @@ def generar_pdf(p: dict, data: dict, est: dict, escenario: str = "Base", vr: dic
                                 colors.HexColor(VERDE if f.Estado == "PASS" else ROJO))]))
     el.append(KeepTogether([t]))
     el.append(Paragraph(
-        f"Fuente de los valores del Excel: {val.attrs['fuente']}. La validación usa siempre los valores "
-        f"default. Criterio: PASS si la diferencia es menor a 0.01%. Las diferencias residuales vienen de la "
-        f"precisión de punto flotante. Si el WACC se redondea a {fp(red['wacc_redondeado'])} el valor por "
-        f"acción sale {fd(red['valor_por_accion'])} en lugar de {fd(val.iloc[5]['Excel'])}, por eso la app "
-        f"trabaja con el WACC sin redondear.", txt))
+        f"Fuente de los valores del Excel: {val.attrs['fuente']}. Esta validación usa siempre el WACC exacto y los "
+        f"valores por defecto. Criterio: PASS si la diferencia es menor a 0.01%. Las diferencias residuales vienen de "
+        f"la precisión de punto flotante.", txt))
     el.append(Spacer(1, 6))
-    el.append(Paragraph("<b>Validación contra el reporte Banamex</b> (WACC redondeado a 7.88% y valores por defecto; "
+    el.append(Paragraph(f"<b>Validación contra el reporte Banamex</b> (WACC redondeado a "
+                        f"{fp(m.resumen_modos(data, est)['redondeado']['wacc'])} y valores por defecto; "
                         "tolerancia ±0.01 en pesos por acción y ±1 mdp en montos).", txt))
     fmt_u = {"mdp": lambda x: fm(x, 1), "$": fd, "%": lambda x: fp(x, 1), "x": lambda x: f"{x:.2f}x"}
     filas = [["Concepto", "Reporte", "App", "Estado"]]

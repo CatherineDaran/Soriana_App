@@ -43,7 +43,7 @@ La app se abre en `http://localhost:8501`.
 pytest -q
 ```
 
-Las pruebas verifican, con los valores default y una tolerancia de 0.01%: beta 0.184577, WACC 7.8819%,
+Las pruebas de `test_modelo.py` corren en modo exacto y verifican, con una tolerancia de 0.01%: beta 0.184577, WACC 7.8819%,
 FCFF 2026–2030, valor terminal 130,725.8, EV 110,159.1, Equity 99,994.1, valor por acción $55.5523,
 escenarios $37.3382 y $73.9676, valor ponderado $55.6026 y la matriz de sensibilidad WACC–g.
 
@@ -66,5 +66,6 @@ escenarios $37.3382 y $73.9676, valor ponderado $55.6026 y la matriz de sensibil
 6. **Validación**: contra el Excel integrador y contra el reporte Banamex (WACC redondeado a 7.88%).
 7. **Reporte PDF**: genera y descarga el reporte con los valores en pantalla (21 secciones).
 
-En la barra lateral, **WACC del DCF** cambia entre el WACC exacto del Excel (7.8819%, $55.55) y el redondeado del
-reporte Banamex (7.88%, $55.58).
+En la barra lateral, **WACC del DCF** elige el modo. Por defecto es el WACC redondeado a 7.88% del reporte y la
+presentación Banamex ($55.58 por acción); la opción "Exacto" usa el WACC de 7.8819% del Excel integrador ($55.55).
+Un WACC manual siempre tiene prioridad. La validación contra el Excel se calcula siempre en modo exacto.

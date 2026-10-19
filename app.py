@@ -33,7 +33,7 @@ GRIS_C = "#D9D5D2"
 GRIS_TEXTO = "#62646B"
 VERDE = "#3E8A3A"      # diferencias positivas
 ROJO = "#B23A33"       # diferencias negativas
-VERSION = "v3.0 · 19-oct-2026"  # se muestra al pie de la barra lateral
+VERSION = "v3.1 · 19-oct-2026"  # se muestra al pie de la barra lateral
 # Integrantes del equipo (se muestran en la barra lateral y en el encabezado del Dashboard)
 EQUIPO = [
     ("Alejandro Ochoa", "A01613152"),
@@ -300,6 +300,11 @@ def validacion_excel():
 
 
 @st.cache_data
+def resumen_modos():
+    return m.resumen_modos(datos(), estadisticas())
+
+
+@st.cache_data
 def validacion_banamex():
     return relativa.validacion_reporte(datos(), estadisticas(), datos_relativa())
 
@@ -506,11 +511,13 @@ with st.sidebar:
     st.session_state.setdefault(PREFIJO + "escenario", "Base")
     escenario = st.radio("Escenario", m.ESCENARIOS, key=PREFIJO + "escenario")
 
-    MODOS_WACC = {"exacto": "Exacto (Excel integrador)", "redondeado": "Redondeado a 7.88% (reporte Banamex)"}
-    st.session_state.setdefault(PREFIJO + "modo_wacc", "exacto")
+    RM = resumen_modos()
+    MODOS_WACC = {"redondeado": f"Redondeado a {fp(RM['redondeado']['wacc'])} (reporte Banamex)",
+                  "exacto": f"Exacto ({fp(RM['exacto']['wacc'], 4)}, Excel integrador)"}
+    st.session_state.setdefault(PREFIJO + "modo_wacc", DEF["modo_wacc"])
     modo_wacc = st.radio("WACC del DCF", list(MODOS_WACC), key=PREFIJO + "modo_wacc",
                          format_func=MODOS_WACC.get)
-    st.caption("La diferencia de 3 centavos viene solo del redondeo del WACC.")
+    st.caption(f"La diferencia de {fd(abs(RM['diferencia']))} por acción viene solo del redondeo del WACC.")
 
     p = copy.deepcopy(DEF)
     ajuste = m.ajuste_antad(DATA)
@@ -1040,11 +1047,14 @@ with tabs[2]:
          fp(CC["kd"]["usado"] * (1 - CC["isr"]), 4)],
         ["Pesos", f"D = {fm(CC['d'], 0)} · E = {fm(CC['e'], 0)}", f"D/V {fp(CC['wd'])} · E/V {fp(CC['we'])}"],
         ["WACC = E/V × Ke + D/V × Kd × (1 − t)", "", fp(CC["wacc"]["calculado"], 4)],
-        ["WACC usado (manual o calculado)", "", fp(CC["wacc"]["usado"], 4)],
+        [f"WACC según el modo: {MODOS_WACC[CC['wacc']['modo']]}",
+         "redondeo a 4 decimales" if CC["wacc"]["modo"] == "redondeado" else "sin redondeo",
+         fp(CC["wacc"]["redondeado"] if CC["wacc"]["modo"] == "redondeado" else CC["wacc"]["calculado"], 4)],
+        ["WACC usado (manual, si lo hay; si no, el del modo)", "", fp(CC["wacc"]["usado"], 4)],
         [f"WACC del escenario {escenario}", f"ajuste {fp(R['ajustes']['d_wacc'])}", fp(V["wacc"], 4)],
-    ], columns=["Concepto", "Operación", "Resultado"], index=range(1, 8))
+    ], columns=["Concepto", "Operación", "Resultado"], index=range(1, 9))
     pasos.index.name = "Paso"
-    tabla(pasos, totales=(7,), izq=("Concepto", "Operación"))
+    tabla(pasos, totales=(8,), izq=("Concepto", "Operación"))
     nota(f"<b>Referencia.</b> Con el capital a valor de mercado (precio × {fm(p['acciones'], 0)} millones de "
          f"acciones = {fm(CC['e_mercado'], 0)} mdp) el WACC sería <b>{fp(CC['wacc_mercado'], 4)}</b>. "
          "La valuación usa el capital contable en libros, como el Excel.")
@@ -1491,6 +1501,7 @@ with TOP[4]:
 # ---------------------------------------------------------------------------
 
 with tabs[6]:
+    nota("<b>Nota.</b> " + m.nota_modos(resumen_modos(), fp, fd))
     val, red = validacion_excel()
     n_pass = int((val["Estado"] == "PASS").sum())
     c = st.columns(3)
@@ -1499,7 +1510,8 @@ with tabs[6]:
     tarjeta(c[1], "Diferencia máxima", f"{val['Diferencia %'].abs().max() * 100:.2e}%", "en valor absoluto")
     tarjeta(c[2], "Valores comparados", "Defaults del Excel", "Sin importar lo que se mueva en la barra lateral")
 
-    seccion("Validación contra el Excel integrador", "Celdas: '7 Valuación'!B11, B12, B16, B18, B24, B26 y '9 Escenarios'!B12:D12.")
+    seccion("Validación contra el Excel integrador", f"Siempre con el WACC exacto de "
+            f"{fp(resumen_modos()['exacto']['wacc'], 4)}. Celdas: '7 Valuación'!B11, B12, B16, B18, B24, B26 y '9 Escenarios'!B12:D12.")
 
     def _f(k, v):
         return fp(v, 4) if k in ("WACC", "g") else (fd(v, 4) if "acción" in k else fm(v, 2))
@@ -1515,12 +1527,11 @@ with tabs[6]:
     tabla(vista, indice=False, izq=("Variable",))
     nota(
         f"<b>Fuente de los valores del Excel:</b> {h(val.attrs['fuente'])}.<br><br>"
-        "<b>Nota sobre diferencias.</b> La comparación usa siempre los valores default, sin importar lo que se haya "
-        "movido en la barra lateral. La app trabaja con la misma precisión que Excel (doble precisión), por lo que "
-        "las diferencias son del orden de 10⁻¹⁰ y vienen solo del orden de las operaciones de punto flotante. "
-        f"Las diferencias visibles aparecen cuando se redondea un insumo: por ejemplo, con el WACC redondeado a "
-        f"{fp(red['wacc_redondeado'])} el valor sale <b>{fd(red['valor_por_accion'])}</b> en lugar de "
-        f"<b>{fd(val.iloc[5]['Excel'])}</b>. Por eso la app no redondea ningún valor intermedio."
+        "<b>Nota sobre diferencias.</b> Esta tabla se calcula siempre con el WACC exacto y los valores por defecto, "
+        "sin importar lo que se haya movido en la barra lateral. La app trabaja con la misma precisión que Excel "
+        "(doble precisión), por lo que las diferencias son del orden de 10⁻¹⁰ y vienen solo del orden de las "
+        f"operaciones de punto flotante. Con el WACC redondeado a {fp(red['wacc_redondeado'])}, el modo por defecto "
+        f"de la app, el valor sale <b>{fd(red['valor_por_accion'])}</b> en lugar de <b>{fd(val.iloc[5]['Excel'])}</b>."
     )
 
 
@@ -1528,7 +1539,8 @@ with TOP[5]:
     vb = validacion_banamex()
     nb = int((vb["Estado"] == "PASS").sum())
     seccion("Validación contra el reporte Banamex",
-            "Siempre con el WACC redondeado a 7.88% y los valores por defecto, sin importar lo que haya en pantalla. "
+            f"Siempre con el WACC redondeado a {fp(resumen_modos()['redondeado']['wacc'])} y los valores por defecto, "
+            "sin importar lo que haya en pantalla. "
             "Tolerancia de redondeo: ±0.01 en pesos por acción y ±1 mdp en montos.")
 
     def _fu(v, u):
@@ -1542,7 +1554,8 @@ with TOP[5]:
         "Tolerancia": [{"mdp": "±1 mdp", "$": "±$0.01", "%": "±0.1 pp", "x": "±0.01x"}[u] for u in vb["Unidad"]],
         "Estado": [f"<span class='badge {'ok' if e == 'PASS' else 'mal'}'>{e}</span>" for e in vb["Estado"]],
     })
-    tarjeta(st, "Reporte Banamex", f"{nb} de {len(vb)} en PASS", "WACC redondeado a 7.88% · valores por defecto",
+    tarjeta(st, "Reporte Banamex", f"{nb} de {len(vb)} en PASS",
+            f"WACC redondeado a {fp(resumen_modos()['redondeado']['wacc'])} · valores por defecto",
             destacada=True)
     tabla(vista, indice=False, izq=("Concepto",))
 

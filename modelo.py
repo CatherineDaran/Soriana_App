@@ -262,6 +262,9 @@ def parametros_default(data: dict) -> dict:
         "fuentes_deuda": copy.deepcopy(data["fuentes_deuda_2T26"]),
         "gastos_financieros_trim": data["tasa_arrendamiento_calculo"]["gastos_financieros_1T26"],
         "wacc_manual": None,
+        # Modo del WACC: "redondeado" a 4 decimales (7.88%, reporte y presentación Banamex) o "exacto"
+        # (7.8819%, Excel integrador). El modo redondeado es el valor por defecto.
+        "modo_wacc": "redondeado",
         # Valuación
         "g_manual": None,
         "acciones": pd_["acciones_millones"],
@@ -298,7 +301,9 @@ def costo_capital(p: dict, est: dict) -> dict:
     d, e, t = p["deuda_wacc"], p["capital_wacc"], p["isr"]
     wd, we = d / (d + e), e / (d + e)
     wacc_calc = we * ke + wd * kd * (1 - t)
-    wacc = _usado(p["wacc_manual"], wacc_calc)
+    # El modo redondeado solo redondea el WACC calculado; un WACC manual siempre tiene prioridad.
+    wacc_modo = round(wacc_calc, 4) if p.get("modo_wacc", "exacto") == "redondeado" else wacc_calc
+    wacc = _usado(p["wacc_manual"], wacc_modo)
 
     e_mercado = p["precio_mercado"] * p["acciones"]
     wacc_mercado = (e_mercado / (d + e_mercado)) * ke + (d / (d + e_mercado)) * kd * (1 - t)
@@ -316,7 +321,8 @@ def costo_capital(p: dict, est: dict) -> dict:
         "e": e,
         "wd": wd,
         "we": we,
-        "wacc": {"calculado": wacc_calc, "manual": p["wacc_manual"], "usado": wacc},
+        "wacc": {"calculado": wacc_calc, "modo": p.get("modo_wacc", "exacto"), "redondeado": round(wacc_calc, 4),
+                 "manual": p["wacc_manual"], "usado": wacc},
         "e_mercado": e_mercado,
         "wacc_mercado": wacc_mercado,
     }
@@ -674,6 +680,7 @@ def valores_excel(data: dict, ruta_excel: Path | str = RUTA_EXCEL) -> tuple[dict
 def validacion(data: dict, est: dict, tolerancia: float = 0.0001) -> pd.DataFrame:
     """Compara siempre con los valores default, sin importar lo que el usuario haya movido."""
     p = parametros_default(data)
+    p["modo_wacc"] = "exacto"  # el Excel integrador usa el WACC exacto de 7.8819%
     esc = todos_escenarios(p, data, est)
     base = esc["resultados"]["Base"]["valuacion"]
     app = {
@@ -700,9 +707,29 @@ def validacion(data: dict, est: dict, tolerancia: float = 0.0001) -> pd.DataFram
     return df
 
 
+def resumen_modos(data: dict, est: dict) -> dict:
+    """WACC y valor por acción base con los valores por defecto en cada modo (para los textos de la app)."""
+    salida = {}
+    for modo in ("exacto", "redondeado"):
+        p = parametros_default(data)
+        p["modo_wacc"] = modo
+        r = modelo_completo(p, data, est, "Base")
+        salida[modo] = {"wacc": r["valuacion"]["wacc"], "vpa": r["valuacion"]["valor_por_accion"]}
+    salida["diferencia"] = salida["redondeado"]["vpa"] - salida["exacto"]["vpa"]
+    return salida
+
+
+def nota_modos(rm: dict, fp, fd) -> str:
+    """Nota común a las dos validaciones; las cifras salen del cálculo, no están escritas a mano."""
+    return (f"El reporte y la presentación usan el WACC redondeado a {fp(rm['redondeado']['wacc'])} "
+            f"({fd(rm['redondeado']['vpa'])}); el Excel integrador usa el WACC exacto de {fp(rm['exacto']['wacc'], 4)} "
+            f"({fd(rm['exacto']['vpa'])}). La diferencia de {fd(abs(rm['diferencia']))} viene solo del redondeo.")
+
+
 def efecto_redondeo_wacc(data: dict, est: dict, decimales: int = 4) -> dict:
     """Valor por acción si el WACC se redondea (p. ej. 7.88%)."""
     p = parametros_default(data)
+    p["modo_wacc"] = "exacto"
     cc = costo_capital(p, est)
     w = round(cc["wacc"]["calculado"], decimales)
     r = modelo_completo(_con(p, wacc_manual=w), data, est, "Base")
