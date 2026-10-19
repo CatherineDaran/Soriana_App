@@ -1,10 +1,26 @@
 {
- "_nota": "Datos extraídos de Estudio_Financiero_Soriana.xlsx (modelo de Catherine Daran Argueta). Cifras financieras en millones de pesos (mdp). Tasas en decimales.",
+ "_nota": "Datos extraídos de Estudio_Financiero_Soriana.xlsx (modelo del equipo). Cifras financieras en millones de pesos (mdp). Tasas en decimales.",
  "empresa": {
   "nombre": "Organización Soriana",
   "emisora": "SORIANA B",
-  "estudiante": "Catherine Daran Argueta",
-  "matricula": "A01611885",
+  "equipo": [
+   {
+    "nombre": "Alejandro Ochoa",
+    "matricula": "A01613152"
+   },
+   {
+    "nombre": "Catherine Daran",
+    "matricula": "A01611885"
+   },
+   {
+    "nombre": "Dheneb Velazquez",
+    "matricula": "A01614817"
+   },
+   {
+    "nombre": "Julio Gaspar",
+    "matricula": "A01613250"
+   }
+  ],
   "curso": "Valuación de Empresas",
   "fecha_precio": "2026-10-12"
  },
