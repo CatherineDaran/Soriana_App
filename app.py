@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import copy
 import html
+import importlib
+import os
 
 import numpy as np
 import pandas as pd
@@ -18,6 +20,24 @@ import interfaz
 import modelo as m
 import relativa
 import reporte_pdf
+
+
+def _recargar_modulos(*modulos):
+    """Streamlit solo vuelve a ejecutar app.py; los módulos importados se quedan en memoria. Si un módulo cambió
+    en disco (por ejemplo, tras una actualización en Streamlit Cloud) o aún no se ha revisado, se recarga para
+    que app.py nunca use una versión vieja."""
+    for mod in modulos:
+        try:
+            mtime = os.path.getmtime(mod.__file__)
+        except (OSError, AttributeError, TypeError):
+            continue
+        if getattr(mod, "_mtime_cargado", None) != mtime:
+            importlib.reload(mod)
+            mod._mtime_cargado = mtime
+
+
+# El orden importa: relativa y reporte_pdf usan modelo.
+_recargar_modulos(m, relativa, interfaz, reporte_pdf)
 
 # Paleta de Soriana, suavizada para lectura cómoda
 PRIM = "#B23A33"       # rojo Soriana
@@ -33,7 +53,7 @@ GRIS_C = "#D9D5D2"
 GRIS_TEXTO = "#62646B"
 VERDE = "#3E8A3A"      # diferencias positivas
 ROJO = "#B23A33"       # diferencias negativas
-VERSION = "v3.1 · 19-oct-2026"  # se muestra al pie de la barra lateral
+VERSION = "v3.2 · 19-oct-2026"  # se muestra al pie de la barra lateral
 # Integrantes del equipo (se muestran en la barra lateral y en el encabezado del Dashboard)
 EQUIPO = [
     ("Alejandro Ochoa", "A01613152"),
