@@ -32,7 +32,7 @@ GRIS_C = "#D9D5D2"
 GRIS_TEXTO = "#62646B"
 VERDE = "#3E8A3A"      # diferencias positivas
 ROJO = "#B23A33"       # diferencias negativas
-VERSION = "v2.6 · 19-oct-2026"  # se muestra al pie de la barra lateral
+VERSION = "v2.7 · 19-oct-2026"  # se muestra al pie de la barra lateral
 # Integrantes del equipo (se muestran en la barra lateral y en el encabezado del Dashboard)
 EQUIPO = [
     ("Alejandro Ochoa", "A01613152"),
@@ -490,11 +490,6 @@ def manual(label, clave, calculado, pct=True, fmt="%.4f", paso=None, mostrar_dec
 
 with st.sidebar:
     st.markdown(f"<div class='lateral-logo'><img src='{LOGO}' alt='Soriana'></div>", unsafe_allow_html=True)
-    st.markdown(f"<div class='lateral-titulo'><div class='t'>Variables del modelo</div>"
-                f"<div class='s'>{h(EMP['emisora'])} · valuación por FCFF</div>"
-                "<div class='eq-t'>Equipo</div><div class='eq'>"
-                + "".join(f"<div><span>{h(n)}</span><span>{h(mt)}</span></div>" for n, mt in EQUIPO)
-                + "</div></div>", unsafe_allow_html=True)
 
     st.session_state.setdefault(PREFIJO + "escenario", "Base")
     escenario = st.radio("Escenario", m.ESCENARIOS, key=PREFIJO + "escenario")

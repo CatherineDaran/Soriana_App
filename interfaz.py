@@ -100,9 +100,12 @@ def css(prim: str, prim_cl: str, carbon: str, gris_texto: str) -> str:
              padding: 12px 0; gap: 4px; box-shadow: 1px 0 0 rgba(0,0,0,.06);
              animation: rielEntra .25s ease-out both; }}
     @keyframes rielEntra {{ from {{ transform: translateX(-100%); }} to {{ transform: none; }} }}
-    body:has([data-testid="stSidebar"][aria-expanded="false"]) #riel {{ display: flex; }}
-    body:has([data-testid="stSidebar"][aria-expanded="false"]) [data-testid="stMain"] {{ padding-left: 60px; }}
-    body:has([data-testid="stSidebar"][aria-expanded="false"]) [data-testid="stExpandSidebarButton"] {{
+    body:has([data-testid="stSidebar"][aria-expanded="false"]) #riel,
+    body:has([data-testid="stSidebar"][data-collapsed="true"]) #riel {{ display: flex; }}
+    body:has([data-testid="stSidebar"][aria-expanded="false"]) [data-testid="stMain"],
+    body:has([data-testid="stSidebar"][data-collapsed="true"]) [data-testid="stMain"] {{ padding-left: 60px; }}
+    body:has([data-testid="stSidebar"][aria-expanded="false"]) [data-testid="stExpandSidebarButton"],
+    body:has([data-testid="stSidebar"][data-collapsed="true"]) [data-testid="stExpandSidebarButton"] {{
         opacity: 0; pointer-events: none; }}
     #riel .marca {{ width: 34px; height: 34px; margin: 2px 0 10px 0; }}
     #riel .marca img {{ width: 100%; height: 100%; }}
@@ -124,9 +127,12 @@ def css(prim: str, prim_cl: str, carbon: str, gris_texto: str) -> str:
     #riel button:hover::after {{ opacity: 1; transform: translate(0, -50%); }}
     #riel button:focus-visible {{ outline: 2px solid {prim_cl}; }}
     @media (max-width: 700px) {{
-      body:has([data-testid="stSidebar"][aria-expanded="false"]) #riel {{ display: none; }}
-      body:has([data-testid="stSidebar"][aria-expanded="false"]) [data-testid="stMain"] {{ padding-left: 0; }}
-      body:has([data-testid="stSidebar"][aria-expanded="false"]) [data-testid="stExpandSidebarButton"] {{
+      body:has([data-testid="stSidebar"][aria-expanded="false"]) #riel,
+      body:has([data-testid="stSidebar"][data-collapsed="true"]) #riel {{ display: none; }}
+      body:has([data-testid="stSidebar"][aria-expanded="false"]) [data-testid="stMain"],
+      body:has([data-testid="stSidebar"][data-collapsed="true"]) [data-testid="stMain"] {{ padding-left: 0; }}
+      body:has([data-testid="stSidebar"][aria-expanded="false"]) [data-testid="stExpandSidebarButton"],
+      body:has([data-testid="stSidebar"][data-collapsed="true"]) [data-testid="stExpandSidebarButton"] {{
           opacity: 1; pointer-events: auto; }}
     }}
 
@@ -223,7 +229,10 @@ def _codigo(logo: str, icono: str, riel: str, pasos: str) -> str:
       document.body.appendChild(riel);
 
       function lateral() {{ return document.querySelector('[data-testid="stSidebar"]'); }}
-      function cerrada() {{ var s = lateral(); return s && s.getAttribute("aria-expanded") === "false"; }}
+      function cerrada() {{
+        var s = lateral();
+        return !!s && (s.getAttribute("aria-expanded") === "false" || s.getAttribute("data-collapsed") === "true");
+      }}
       function abrirLateral(despues) {{
         if (cerrada()) {{
           var b = document.querySelector('[data-testid="stExpandSidebarButton"]');
