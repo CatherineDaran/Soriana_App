@@ -53,10 +53,10 @@ GRIS_C = "#D9D5D2"
 GRIS_TEXTO = "#62646B"
 VERDE = "#3E8A3A"      # diferencias positivas
 ROJO = "#B23A33"       # diferencias negativas
-VERSION = "v3.4 · 19-oct-2026"  # se muestra al pie de la barra lateral
+VERSION = "v3.5 · 20-oct-2026"  # se muestra al pie de la barra lateral
 FUENTE = "Inter, 'Helvetica Neue', Arial, sans-serif"
 
-st.set_page_config(page_title="Valuación SORIANA B", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Valuación SORIANA B", layout="wide", initial_sidebar_state="auto")
 
 st.markdown(
     f"""
@@ -76,7 +76,8 @@ st.markdown(
     .hero .titulo {{ color: {CARBON}; font-size: 1.6rem; font-weight: 700; line-height: 1.25; }}
     .hero .titulo span {{ color: {PRIM}; }}
     .hero .sub {{ color: {GRIS_TEXTO}; font-size: .9rem; margin-top: 4px; }}
-    .hero .equipo {{ display: grid; grid-template-columns: repeat(2, max-content); gap: 3px 28px; margin-top: 8px;
+    .hero .equipo {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, max-content)); gap: 3px 28px;
+                      margin-top: 8px;
                       font-size: .84rem; color: {GRIS_TEXTO}; }}
     .hero .equipo b {{ color: {CARBON}; font-weight: 600; }}
     .hero .chips {{ display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }}
@@ -92,9 +93,38 @@ st.markdown(
     .hero .precio .dif.pos {{ background: #EAF4E8; }}
     .hero .precio .dif.neg {{ background: #F9E9E7; }}
     .hero .precio .sub {{ font-size: .8rem; margin-top: 6px; }}
-    @media (max-width: 900px) {{
-      .hero .cuerpo {{ grid-template-columns: 1fr; }}
-      .hero .precio {{ text-align: left; }}
+    @media (max-width: 1180px) {{
+      .hero .cuerpo {{ grid-template-columns: 1fr; gap: 14px; }}
+      .hero .precio {{ text-align: left; min-width: 0; }}
+    }}
+    @media (max-width: 640px) {{
+      .hero .cuerpo {{ padding: 16px 16px; }}
+      .hero .titulo {{ font-size: 1.3rem; }}
+      .hero .precio .val {{ font-size: 1.8rem; }}
+      .hero .equipo {{ grid-template-columns: 1fr; }}
+      .block-container {{ padding-left: 1rem !important; padding-right: 1rem !important; }}
+    }}
+
+    /* Responsive: las filas de columnas pasan a la siguiente línea cuando no caben */
+    [data-testid="stMain"] [data-testid="stHorizontalBlock"] {{ flex-wrap: wrap; }}
+    [data-testid="stMain"] [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {{ min-width: min(100%, 340px); }}
+    [data-testid="stMain"] [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"] .tarjeta) > [data-testid="stColumn"] {{
+        min-width: min(100%, 175px); }}
+    [data-testid="stMain"] [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"] [data-testid="stTextInput"]) > [data-testid="stColumn"] {{
+        min-width: min(100%, 150px); }}
+    @media (max-width: 640px) {{
+      .modebar-container {{ display: none !important; }}
+      [data-testid="stMain"] [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"] .tarjeta) > [data-testid="stColumn"] {{
+          min-width: calc(50% - 0.5rem); }}
+      .tarjeta {{ padding: 11px 12px !important; min-height: 0 !important; }}
+      .tarjeta .val {{ font-size: 1.15rem !important; }}
+    }}
+    @media (max-width: 400px) {{
+      .tarjeta .val {{ white-space: normal !important; font-size: 1.05rem !important; }}
+      [data-baseweb="tab"] {{ padding: 8px 8px !important; }}
+      [data-baseweb="tab"] p {{ font-size: .8rem !important; }}
+      table.tf {{ font-size: .8rem; }}
+      table.tf th, table.tf td {{ padding: 6px 9px; }}
     }}
 
     /* Pestañas */
@@ -119,6 +149,7 @@ st.markdown(
     .tarjeta .val {{ font-size: clamp(1.05rem, 1.55vw, 1.5rem); font-weight: 700; color: {CARBON}; margin-top: 4px;
                      font-variant-numeric: tabular-nums; white-space: nowrap; }}
     .tarjeta .sub {{ font-size: .78rem; color: #85878D; margin-top: 2px; }}
+    .tarjeta .val.texto {{ white-space: normal; font-size: clamp(1.05rem, 1.3vw, 1.3rem); line-height: 1.25; }}
     .tarjeta.destacada {{ background: {PRIM_FONDO}; border-color: {PRIM_CL}; }}
     .tarjeta.destacada .val {{ color: {PRIM}; }}
     .pos {{ color: {VERDE} !important; }}
@@ -400,6 +431,8 @@ def seccion(titulo, descripcion=None, dest=None):
 
 def tarjeta(col, etiqueta, valor, sub="", clase="", destacada=False):
     _CONTADOR["t"] = _CONTADOR.get("t", 0) + 1
+    if sum(ch.isalpha() for ch in str(valor)) > 4:
+        clase = (clase + " texto").strip()  # valores de texto: pueden ocupar dos líneas
     col.markdown(
         f"<div class='tarjeta{' destacada' if destacada else ''}'><div class='etq'>{h(etiqueta)}</div>"
         f"<div class='val {clase}' data-anim='t{_CONTADOR['t']}'>{h(valor)}</div>"
@@ -813,6 +846,15 @@ def recomendacion_html(rec, umbrales, dest=None):
         unsafe_allow_html=True)
 
 
+ETIQUETA_FF = {
+    "DCF por escenarios": "DCF<br>escenarios",
+    "DCF por sensibilidad (WACC × g)": "DCF<br>sensibilidad",
+    "Comparables (múltiplos)": "Comparables<br>múltiplos",
+    "Comparables EV/EBITDA (P25–P75)": "Comparables<br>EV/EBITDA P25–P75",
+    "Transacciones (múltiplos)": "Transacciones<br>múltiplos",
+}
+
+
 def fig_football():
     rangos = VR["rangos"]
     nombres = [k for k, (a, b) in rangos.items() if a is not None and b is not None]
@@ -820,7 +862,8 @@ def fig_football():
     fig = go.Figure()
     for i, k in enumerate(nombres):
         a, b = rangos[k]
-        fig.add_trace(go.Bar(y=[k], x=[b - a], base=[a], orientation="h", marker_color=colores[i % len(colores)],
+        etiqueta = ETIQUETA_FF.get(k, k)
+        fig.add_trace(go.Bar(y=[etiqueta], x=[b - a], base=[a], orientation="h", marker_color=colores[i % len(colores)],
                              text=[f"{fd(a)} – {fd(b)}"], textposition="inside", insidetextanchor="middle",
                              textfont=dict(color="#FFFFFF" if i % 2 == 0 else CARBON), showlegend=False,
                              hovertemplate=f"{k}<br>{fd(a)} – {fd(b)}<extra></extra>"))
@@ -1312,14 +1355,16 @@ with SUB_REL[0]:
     valores = [f["ev_ebitda"] for f in filas_c] + [ref["ev_ebitda"]]
     colores = [SEC if f["incluir"] else GRIS_C for f in filas_c] + [PRIM]
     fig = go.Figure(go.Bar(x=nombres, y=valores, marker_color=colores, text=[_fx(v) for v in valores],
-                           textposition="outside", width=0.6, hovertemplate="%{x}: %{y:.2f}x<extra></extra>"))
+                           textposition="outside", width=0.6, hovertemplate="%{x}: %{y:.2f}x<extra></extra>",
+                           showlegend=False))
     media = comp["estadisticos"].loc["Media", "EV/EBITDA"]
     if media is not None:
         fig.add_trace(go.Scatter(x=nombres, y=[media] * len(nombres), mode="lines", name=f"Media de pares {_fx(media)}",
                                  line=dict(color=CARBON, dash="dash", width=1.5), hoverinfo="skip"))
     fig.update_layout(showlegend=True)
     fig.update_yaxes(title_text="EV/EBITDA (veces)")
-    grafica(layout(fig, "EV/EBITDA por par (Soriana resaltada; gris = excluido)", 380), c1)
+    grafica(layout(fig, "EV/EBITDA por par", 380), c1)
+    c1.caption("Soriana en rojo (referencia, no entra en los estadísticos); en gris, los pares excluidos.")
     with c2:
         tabla_estadisticos_html(comp["estadisticos"])
 
@@ -1378,7 +1423,8 @@ with SUB_REL[1]:
                                  name=f"Media depurada {_fx(tr['media_ev_ebitda_depurada'])}",
                                  line=dict(color=PRIM, dash="dash", width=1.6), hoverinfo="skip"))
     fig.update_yaxes(title_text="EV/EBITDA (veces)")
-    grafica(layout(fig, "EV/EBITDA por operación (gris = excluida)", 380), c1)
+    grafica(layout(fig, "EV/EBITDA por operación", 380), c1)
+    c1.caption("En gris, las operaciones excluidas.")
     with c2:
         tabla_estadisticos_html(tr["estadisticos"])
     seccion("Precio implícito por múltiplo", "Equity = múltiplo × métrica de Soriana + ajuste neto (−10,165 mdp).")

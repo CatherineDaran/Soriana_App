@@ -153,7 +153,7 @@ def css(prim: str, prim_cl: str, carbon: str, gris_texto: str) -> str:
     #splash {{ position: fixed; inset: 0; z-index: 1000020; background: #FFFFFF; display: flex;
                flex-direction: column; align-items: center; justify-content: center; gap: 18px;
                transition: opacity .45s ease, visibility .45s ease; }}
-    #splash.salir {{ opacity: 0; visibility: hidden; }}
+    #splash.salir {{ opacity: 0; visibility: hidden; pointer-events: none; }}
     #splash .logo {{ position: relative; width: min(300px, 70vw); }}
     #splash .logo img {{ display: block; width: 100%; height: auto; }}
     #splash .logo .base {{ filter: grayscale(1); opacity: .16; }}
