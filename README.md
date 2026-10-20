@@ -129,10 +129,3 @@ Son 54 pruebas:
 | `test_modelo.py` | 14 | Corre con el WACC exacto y reproduce el Excel con tolerancia de 0.01%: beta 0.184577, WACC 7.8819%, FCFF, VT, EV, Equity, $55.5523, escenarios $37.3382 / $73.9676 y la matriz WACC–g. |
 | `test_modo_default.py` | 10 | Revisa los valores por defecto de la tabla de resultados, incluido el WACC manual de 10% ($35.62). |
 | `test_relativa.py` | 30 | Revisa los 18 valores del reporte Banamex, el precio objetivo con WACC exacto ($46.2456), que la media suba al excluir Liverpool, la muestra completa de transacciones (19.5x), las ponderaciones y el aviso cuando no suman 100%. |
-
-## Publicar en Streamlit Community Cloud
-
-1. Entra a [share.streamlit.io](https://share.streamlit.io) con la cuenta de GitHub.
-2. **Create app** → repositorio `CatherineDaran/Soriana_App`, rama `main`, archivo `app.py` → **Deploy**.
-3. Cada `git push` a `main` actualiza la app. Al pie de la barra lateral aparece la versión publicada.
-4. Si después de un push sigue la versión anterior, usa **⋮ → Reboot app**.
