@@ -23,6 +23,17 @@ RUTA_EXCEL = Path(__file__).parent / "Estudio_Financiero_Soriana.xlsx"
 
 ANIOS_PROYECCION = [2026, 2027, 2028, 2029, 2030]
 
+# Fecha del precio de mercado de referencia (cierre). Se define aquí para no depender de la caché de datos.
+FECHA_PRECIO = "2026-10-19"
+_MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
+
+
+def fecha_corta(iso: str = FECHA_PRECIO) -> str:
+    """'2026-10-19' -> '19-oct-2026'."""
+    a, mes, d = iso.split("-")
+    return f"{int(d)}-{_MESES[int(mes) - 1]}-{a}"
+
+
 # Integrantes del equipo (encabezado del Dashboard y reporte PDF)
 EQUIPO = [
     ("Alejandro Ochoa", "A01613152"),

@@ -1,7 +1,7 @@
 {
  "_nota": "Datos de valuación relativa, precio objetivo y contexto financiero de Soriana. Fuentes: Valuacion_Multiplos_Soriana.xlsx (S&P Capital IQ Pro), Reporte_Ejecutivo_Soriana_Reto.docx y exportación de LSEG Workspace (oct-2026). Cifras en mdp; múltiplos en veces.",
  "precio_mercado": 33.1,
- "fecha_precio": "2026-10-12",
+ "fecha_precio": "2026-10-19",
  "acciones_millones": 1800,
  "metricas_soriana_2025": {
   "ingresos": 177515,

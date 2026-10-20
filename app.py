@@ -53,7 +53,7 @@ GRIS_C = "#D9D5D2"
 GRIS_TEXTO = "#62646B"
 VERDE = "#3E8A3A"      # diferencias positivas
 ROJO = "#B23A33"       # diferencias negativas
-VERSION = "v3.5 · 20-oct-2026"  # se muestra al pie de la barra lateral
+VERSION = "v3.6 · 20-oct-2026"  # se muestra al pie de la barra lateral
 FUENTE = "Inter, 'Helvetica Neue', Arial, sans-serif"
 
 st.set_page_config(page_title="Valuación SORIANA B", layout="wide", initial_sidebar_state="auto")
@@ -730,7 +730,7 @@ hero = "".join([
     "<div class='etq'>Valor estimado por acción</div>",
     f"<div class='val' data-anim='hero'>{h(fd(V['valor_por_accion']))}</div>",
     chip_dif,
-    f"<div class='sub'>Precio de mercado {h(fd(p['precio_mercado']))} · {h(EMP['fecha_precio'])}</div>",
+    f"<div class='sub'>Precio de mercado {h(fd(p['precio_mercado']))} · {h(m.FECHA_PRECIO)}</div>",
     "</div></div></div>",
 ])
 st.markdown(hero, unsafe_allow_html=True)
@@ -899,7 +899,7 @@ st.sidebar.caption(VERSION)
 with tabs[0]:
     clase = "" if dif is None else ("pos" if dif >= 0 else "neg")
     c = st.columns(5)
-    tarjeta(c[0], "Precio de mercado", fd(p["precio_mercado"]), f"Cierre {EMP['fecha_precio']}")
+    tarjeta(c[0], "Precio de mercado", fd(p["precio_mercado"]), f"Cierre {m.FECHA_PRECIO}")
     tarjeta(c[1], "Valor por acción", fd(V["valor_por_accion"]), f"Estimado · escenario {escenario}",
             destacada=True)
     tarjeta(c[2], "Diferencia vs precio", ("n.d." if dif is None else f"{'+' if dif >= 0 else ''}{fp(dif, 1)}"),

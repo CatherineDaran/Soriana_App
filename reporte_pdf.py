@@ -286,7 +286,7 @@ def generar_pdf(p: dict, data: dict, est: dict, escenario: str = "Base", vr: dic
     el.append(Paragraph(
         f"{emp['nombre']}, emisora <b>{emp['emisora']}</b> en la Bolsa Mexicana de Valores. Cadena de "
         f"autoservicio con ingresos de {fm(p['ingresos_base'], 0)} mdp en 2025. Precio de mercado de "
-        f"referencia: {fd(p['precio_mercado'])} (12-oct-2026). Cifras en millones de pesos (mdp).", txt))
+        f"referencia: {fd(p['precio_mercado'])} ({m.fecha_corta()}). Cifras en millones de pesos (mdp).", txt))
 
     # 3. Variables
     seccion(3, "Variables utilizadas")
